@@ -1,0 +1,10 @@
+--binary-grouping none
+--decimal-grouping none
+--hex-grouping none
+--no-space-operators ...,..<
+--octal-grouping none
+--self init-only
+--semicolons never
+--strip-unused-args unnamed-only
+--wrap-collections before-first
+--wrap-parameters before-first
