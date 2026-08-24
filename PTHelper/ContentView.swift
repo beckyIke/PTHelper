@@ -2,6 +2,20 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(AuthViewModel.self) private var authVM
+
+    var body: some View {
+        if authVM.isSignedIn {
+            MainTabView()
+        } else {
+            AuthView()
+        }
+    }
+}
+
+// MARK: - Main app tabs (shown when authenticated)
+
+struct MainTabView: View {
     var body: some View {
         TabView {
             LibraryView()
@@ -19,6 +33,12 @@ struct ContentView: View {
             ActivityView()
                 .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
                 .ptTabBarBackground()
+
+            NavigationStack {
+                ProfileView()
+            }
+            .tabItem { Label("Profile", systemImage: "person.circle") }
+            .ptTabBarBackground()
         }
     }
 }
@@ -29,4 +49,5 @@ struct ContentView: View {
             for: [Exercise.self, Routine.self, RoutineExercise.self, ScheduledSession.self, ExerciseLog.self],
             inMemory: true
         )
+        .environment(AuthViewModel())
 }

@@ -3,6 +3,8 @@ import SwiftData
 
 @main
 struct PTHelperApp: App {
+    @State private var authVM = AuthViewModel()
+
     init() {
         applyAppearance()
     }
@@ -37,6 +39,7 @@ struct PTHelperApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(authVM)
                 .onAppear {
                     let ctx = sharedModelContainer.mainContext
                     SeedData.seedIfNeeded(context: ctx)
