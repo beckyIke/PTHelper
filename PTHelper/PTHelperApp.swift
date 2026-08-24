@@ -42,8 +42,10 @@ struct PTHelperApp: App {
                 .environment(authVM)
                 .onAppear {
                     let ctx = sharedModelContainer.mainContext
-                    SeedData.seedIfNeeded(context: ctx)
-                    RecurrenceManager.generateUpcomingSessions(context: ctx)
+                    Task {
+                        await SupabaseExerciseSync.sync(context: ctx)
+                        RecurrenceManager.generateUpcomingSessions(context: ctx)
+                    }
                 }
         }
         .modelContainer(sharedModelContainer)

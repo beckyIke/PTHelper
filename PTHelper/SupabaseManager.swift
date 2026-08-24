@@ -6,7 +6,7 @@ let supabase = SupabaseClient(
     supabaseKey: SupabaseConfig.anonKey
 )
 
-struct UserProfile: Codable, Sendable {
+struct UserProfile: Codable, Equatable, Sendable {
     let id: UUID
     var username: String?
     var fullName: String?
