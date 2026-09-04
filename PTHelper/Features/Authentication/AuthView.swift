@@ -71,24 +71,25 @@ struct AuthView: View {
 
     @ViewBuilder
     private var fields: some View {
+        @State var hidePassword: Bool = true
+        
         VStack(spacing: 14) {
             PTTextField(
                 label: "Email",
                 text: $email,
                 keyboardType: .emailAddress,
                 textContentType: .emailAddress,
-                autocapitalization: .never
+                autocapitalization: .never,
+                isSecure:  false
             )
-
-            if mode != .resetPassword {
-                PTTextField(
-                    label: "Password",
-                    text: $password,
-                    textContentType: mode == .signUp ? .newPassword : .password,
-                    isSecure: true
-                )
-            }
-
+                if mode != .resetPassword {
+                    PTTextField(
+                        label: "Password",
+                        text: $password,
+                        textContentType: mode == .signUp ? .newPassword : .password,
+                        isSecure: true
+                    )
+                }
             if mode == .signUp {
                 PTTextField(
                     label: "Confirm Password",
@@ -232,7 +233,8 @@ private struct PTTextField: View {
     var keyboardType: UIKeyboardType = .default
     var textContentType: UITextContentType? = nil
     var autocapitalization: TextInputAutocapitalization = .sentences
-    var isSecure = false
+    var isSecure: Bool
+    @State var isHidden: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -240,13 +242,22 @@ private struct PTTextField: View {
                 .font(.caption.weight(.medium))
                 .foregroundColor(.secondary)
             Group {
-                if isSecure {
-                    SecureField("", text: $text)
-                } else {
-                    TextField("", text: $text)
-                        .keyboardType(keyboardType)
-                        .textInputAutocapitalization(autocapitalization)
-                        .autocorrectionDisabled()
+                HStack {
+                    if isHidden {
+                        SecureField("", text: $text)
+                    } else {
+                        TextField("", text: $text)
+                            .keyboardType(keyboardType)
+                            .textInputAutocapitalization(autocapitalization)
+                            .autocorrectionDisabled()
+                    }
+                    if isSecure {
+                        Button(action: {
+                            isHidden.toggle()
+                        }) {
+                            Image(systemName: isHidden ? "eye" : "eye.slash")
+                        }
+                    }
                 }
             }
             .textContentType(textContentType)
@@ -254,6 +265,9 @@ private struct PTTextField: View {
             .padding(.vertical, 10)
             .background(Color(.systemGray6))
             .cornerRadius(8)
+        }
+        .task {
+            isHidden = isSecure
         }
     }
 }
