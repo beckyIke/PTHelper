@@ -6,6 +6,7 @@ import SwiftData
     var setsCompleted: Int
     var repsCompleted: Int
     var durationSeconds: Int
+    var performedBothSides: Bool = false
     var notes: String
     var painLevel: Int // 0–10, 0 = no pain
 
@@ -18,6 +19,7 @@ import SwiftData
         setsCompleted: Int,
         repsCompleted: Int,
         durationSeconds: Int = 0,
+        performedBothSides: Bool = false,
         notes: String = "",
         painLevel: Int = 0
     ) {
@@ -26,6 +28,7 @@ import SwiftData
         self.setsCompleted = setsCompleted
         self.repsCompleted = repsCompleted
         self.durationSeconds = durationSeconds
+        self.performedBothSides = performedBothSides
         self.notes = notes
         self.painLevel = painLevel
         self.completedAt = Date()

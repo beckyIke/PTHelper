@@ -120,7 +120,7 @@ struct ActivityLogRow: View {
             }
             HStack(spacing: 6) {
                 if log.durationSeconds > 0 && log.repsCompleted == 0 {
-                    Text("\(log.setsCompleted) × \(log.durationSeconds)s")
+                    Text("\(log.setsCompleted) × \(log.durationSeconds)s\(log.performedBothSides ? "/side" : "")")
                         .font(.caption).foregroundColor(.secondary)
                 } else {
                     Text("\(log.setsCompleted) × \(log.repsCompleted) reps")

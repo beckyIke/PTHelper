@@ -205,9 +205,15 @@ struct EditRoutineExerciseView: View {
             Form {
                 Section(exercise.name) {
                     Stepper("Sets: \(routineExercise.sets)", value: $routineExercise.sets, in: 1...20)
+                    Toggle("Use Timer", isOn: timerMode)
                     if routineExercise.isTimeBased {
                         Stepper("Duration: \(routineExercise.durationSeconds)s",
                                 value: $routineExercise.durationSeconds, in: 5...600, step: 5)
+                        Toggle("Time Both Sides", isOn: $routineExercise.timesBothSides)
+                        if routineExercise.timesBothSides {
+                            Stepper("Rest Between Sides: \(routineExercise.restSeconds)s",
+                                    value: $routineExercise.restSeconds, in: 5...120, step: 5)
+                        }
                     } else {
                         Stepper("Reps: \(routineExercise.reps)", value: $routineExercise.reps, in: 1...100)
                     }
@@ -226,5 +232,21 @@ struct EditRoutineExerciseView: View {
                 }
             }
         }
+    }
+
+    private var timerMode: Binding<Bool> {
+        Binding(
+            get: { routineExercise.isTimeBased },
+            set: { usesTimer in
+                if usesTimer {
+                    routineExercise.reps = 0
+                    routineExercise.durationSeconds = max(routineExercise.durationSeconds, 30)
+                } else {
+                    routineExercise.reps = max(routineExercise.reps, 10)
+                    routineExercise.durationSeconds = 0
+                    routineExercise.timesBothSides = false
+                }
+            }
+        )
     }
 }

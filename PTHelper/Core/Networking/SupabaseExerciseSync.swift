@@ -12,6 +12,8 @@ private struct RemoteExercise: Codable {
     let defaultSets: Int
     let defaultReps: Int
     let defaultDurationSeconds: Int
+    let defaultTimesBothSides: Bool?
+    let defaultRestSeconds: Int?
     let notes: String
     let isCustom: Bool
 
@@ -21,6 +23,8 @@ private struct RemoteExercise: Codable {
         case defaultSets             = "default_sets"
         case defaultReps             = "default_reps"
         case defaultDurationSeconds  = "default_duration_seconds"
+        case defaultTimesBothSides   = "default_times_both_sides"
+        case defaultRestSeconds      = "default_rest_seconds"
         case isCustom                = "is_custom"
     }
 }
@@ -56,6 +60,12 @@ struct SupabaseExerciseSync {
                     local.defaultSets           = row.defaultSets
                     local.defaultReps           = row.defaultReps
                     local.defaultDurationSeconds = row.defaultDurationSeconds
+                    if let timesBothSides = row.defaultTimesBothSides {
+                        local.defaultTimesBothSides = timesBothSides
+                    }
+                    if let restSeconds = row.defaultRestSeconds {
+                        local.defaultRestSeconds = restSeconds
+                    }
                     local.notes                 = row.notes
                 } else {
                     let exercise = Exercise(
@@ -66,6 +76,8 @@ struct SupabaseExerciseSync {
                         defaultSets:            row.defaultSets,
                         defaultReps:            row.defaultReps,
                         defaultDurationSeconds: row.defaultDurationSeconds,
+                        defaultTimesBothSides:  row.defaultTimesBothSides ?? false,
+                        defaultRestSeconds:     row.defaultRestSeconds ?? 15,
                         notes:                  row.notes,
                         isCustom:               false
                     )

@@ -93,6 +93,8 @@ struct ExercisePickerView: View {
             sets: exercise.defaultSets,
             reps: exercise.defaultReps,
             durationSeconds: exercise.defaultDurationSeconds,
+            timesBothSides: exercise.defaultTimesBothSides,
+            restSeconds: exercise.defaultRestSeconds,
             order: routine.exercises.count
         )
         re.routine = routine

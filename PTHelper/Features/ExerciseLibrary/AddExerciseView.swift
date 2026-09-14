@@ -13,6 +13,8 @@ struct AddExerciseView: View {
     @State private var reps = 10
     @State private var isTimeBased = false
     @State private var durationSeconds = 30
+    @State private var timesBothSides = false
+    @State private var restSeconds = 15
     @State private var notes = ""
 
     var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -39,6 +41,10 @@ struct AddExerciseView: View {
                     Toggle("Time-Based Exercise", isOn: $isTimeBased)
                     if isTimeBased {
                         Stepper("Duration: \(durationSeconds)s", value: $durationSeconds, in: 5...300, step: 5)
+                        Toggle("Time Both Sides", isOn: $timesBothSides)
+                        if timesBothSides {
+                            Stepper("Rest Between Sides: \(restSeconds)s", value: $restSeconds, in: 5...120, step: 5)
+                        }
                     } else {
                         Stepper("Reps: \(reps)", value: $reps, in: 1...100)
                     }
@@ -78,6 +84,8 @@ struct AddExerciseView: View {
             defaultSets: sets,
             defaultReps: isTimeBased ? 0 : reps,
             defaultDurationSeconds: isTimeBased ? durationSeconds : 0,
+            defaultTimesBothSides: isTimeBased && timesBothSides,
+            defaultRestSeconds: restSeconds,
             notes: notes,
             isCustom: true
         )

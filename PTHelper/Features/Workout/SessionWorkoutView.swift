@@ -123,6 +123,7 @@ struct SessionWorkoutView: View {
                 setsCompleted: entry.sets,
                 repsCompleted: entry.reps,
                 durationSeconds: entry.durationSeconds,
+                performedBothSides: re.isTimeBased && re.timesBothSides,
                 notes: entry.notes,
                 painLevel: entry.painLevel
             ))
@@ -175,6 +176,8 @@ struct ExerciseInputView: View {
                 GroupBox {
                     ExerciseTimerView(
                         targetSeconds: routineExercise.isTimeBased ? routineExercise.durationSeconds : 0,
+                        timesBothSides: routineExercise.isTimeBased && routineExercise.timesBothSides,
+                        restSeconds: routineExercise.restSeconds,
                         onComplete: { actual in
                             if routineExercise.isTimeBased {
                                 entry.durationSeconds = actual
@@ -281,27 +284,73 @@ struct ExerciseInputView: View {
 struct ExerciseTimerView: View {
     /// Pass > 0 for countdown mode; 0 for stopwatch (count-up) mode.
     let targetSeconds: Int
-    /// Called with the actual elapsed seconds when a countdown finishes.
+    let timesBothSides: Bool
+    let restSeconds: Int
+    /// Called with the completed duration per side when a countdown finishes.
     var onComplete: ((Int) -> Void)? = nil
 
-    @State private var elapsed: Int = 0
+    @State private var sequence: ExerciseTimerSequence
     @State private var isRunning = false
-    @State private var isComplete = false
     @State private var completionTrigger = false
 
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private var isCountdown: Bool { targetSeconds > 0 }
-    private var displaySeconds: Int {
-        isCountdown ? max(0, targetSeconds - elapsed) : elapsed
+    init(
+        targetSeconds: Int,
+        timesBothSides: Bool = false,
+        restSeconds: Int = 15,
+        onComplete: ((Int) -> Void)? = nil
+    ) {
+        self.targetSeconds = targetSeconds
+        self.timesBothSides = timesBothSides
+        self.restSeconds = restSeconds
+        self.onComplete = onComplete
+        _sequence = State(initialValue: ExerciseTimerSequence(
+            targetSeconds: targetSeconds,
+            timesBothSides: timesBothSides,
+            restSeconds: restSeconds
+        ))
     }
+
+    private var isCountdown: Bool { sequence.isCountdown }
+    private var isComplete: Bool { sequence.isComplete }
     private var ringProgress: CGFloat {
-        guard isCountdown, targetSeconds > 0 else { return 1 }
-        return CGFloat(max(0, targetSeconds - elapsed)) / CGFloat(targetSeconds)
+        guard isCountdown, sequence.phaseDuration > 0, !isComplete else { return 0 }
+        return CGFloat(sequence.displaySeconds) / CGFloat(sequence.phaseDuration)
+    }
+    private var phaseTitle: String {
+        switch sequence.phase {
+        case .exercise: return isCountdown ? "Exercise" : "Stopwatch"
+        case .rightSide: return "Right Side"
+        case .rest: return "Rest"
+        case .leftSide: return "Left Side"
+        case .complete: return "Done!"
+        }
+    }
+    private var phaseColor: Color {
+        switch sequence.phase {
+        case .rest: return .ptSage
+        case .complete: return .green
+        default: return .ptTerracotta
+        }
     }
 
     var body: some View {
         VStack(spacing: 16) {
+            if timesBothSides && isCountdown {
+                HStack(spacing: 8) {
+                    phaseIndicator("Right", isActive: sequence.phase == .rightSide, isFinished: sequence.phase == .rest || sequence.phase == .leftSide || isComplete)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    phaseIndicator("Rest", isActive: sequence.phase == .rest, isFinished: sequence.phase == .leftSide || isComplete)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    phaseIndicator("Left", isActive: sequence.phase == .leftSide, isFinished: isComplete)
+                }
+            }
+
             // Dial
             ZStack {
                 // Track ring
@@ -314,22 +363,23 @@ struct ExerciseTimerView: View {
                     Circle()
                         .trim(from: 0, to: ringProgress)
                         .stroke(
-                            isComplete ? Color.ptSage : Color.ptTerracotta,
+                            phaseColor,
                             style: StrokeStyle(lineWidth: 8, lineCap: .round)
                         )
                         .frame(width: 140, height: 140)
                         .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 1), value: elapsed)
+                        .animation(.linear(duration: 1), value: sequence.phaseElapsed)
                 }
 
                 // Time label
                 VStack(spacing: 2) {
-                    Text(timeString(displaySeconds))
+                    Text(timeString(sequence.displaySeconds))
                         .font(.system(size: 34, weight: .bold, design: .monospaced))
-                        .foregroundColor(isComplete ? .green : .primary)
+                        .foregroundColor(isComplete ? .green : sequence.phase == .rest ? .ptSage : .primary)
                         .contentTransition(.numericText())
-                    Text(isComplete ? "Done!" : isCountdown ? "remaining" : "elapsed")
+                    Text(phaseTitle)
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundColor(isComplete ? .green : .secondary)
                 }
             }
@@ -338,9 +388,7 @@ struct ExerciseTimerView: View {
             HStack(spacing: 24) {
                 // Reset
                 Button {
-                    elapsed = 0
-                    isRunning = false
-                    isComplete = false
+                    reset()
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 18, weight: .semibold))
@@ -358,7 +406,7 @@ struct ExerciseTimerView: View {
                     Image(systemName: isRunning ? "pause.fill" : "play.fill")
                         .font(.system(size: 22, weight: .semibold))
                         .frame(width: 60, height: 60)
-                        .background(isComplete ? Color.ptSage : Color.ptTerracotta)
+                        .background(phaseColor)
                         .foregroundColor(.white)
                         .clipShape(Circle())
                 }
@@ -367,9 +415,9 @@ struct ExerciseTimerView: View {
                 // +30 s nudge (useful for time-based rest periods)
                 Button {
                     if isCountdown {
-                        elapsed = max(0, elapsed - 30)
+                        sequence.adjustElapsed(by: -30)
                     } else {
-                        elapsed += 30
+                        sequence.adjustElapsed(by: 30)
                     }
                 } label: {
                     Image(systemName: isCountdown ? "minus.circle" : "plus.circle")
@@ -382,9 +430,18 @@ struct ExerciseTimerView: View {
                 .disabled(isComplete)
             }
 
+            if sequence.phase == .rest {
+                Button("Skip Rest") {
+                    if sequence.skipRest() == .phaseChanged {
+                        completionTrigger.toggle()
+                    }
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.ptTerracotta)
+            }
+
             if isCountdown {
-                Text(isComplete ? "Timer complete — adjust the duration above if needed."
-                               : "Timer will auto-fill duration when it reaches zero.")
+                Text(helperText)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -394,15 +451,45 @@ struct ExerciseTimerView: View {
         .padding(.vertical, 8)
         .onReceive(clock) { _ in
             guard isRunning else { return }
-            elapsed += 1
-            if isCountdown && elapsed >= targetSeconds {
-                isRunning = false
-                isComplete = true
+            switch sequence.tick() {
+            case .none:
+                break
+            case .phaseChanged:
                 completionTrigger.toggle()
-                onComplete?(elapsed)
+            case .completed:
+                isRunning = false
+                completionTrigger.toggle()
+                onComplete?(targetSeconds)
             }
         }
         .sensoryFeedback(.success, trigger: completionTrigger)
+    }
+
+    @ViewBuilder
+    private func phaseIndicator(_ title: String, isActive: Bool, isFinished: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: isFinished ? "checkmark.circle.fill" : isActive ? "circle.inset.filled" : "circle")
+            Text(title)
+        }
+        .font(.caption)
+        .foregroundColor(isFinished ? .green : isActive ? phaseColor : .secondary)
+    }
+
+    private var helperText: String {
+        if isComplete {
+            return timesBothSides ? "Both sides complete." : "Timer complete — adjust the duration above if needed."
+        }
+        switch sequence.phase {
+        case .rightSide: return "Complete the exercise on your right side. Rest will begin automatically."
+        case .rest: return "Rest before switching to your left side."
+        case .leftSide: return "Complete the exercise on your left side."
+        default: return "Timer will auto-fill duration when it reaches zero."
+        }
+    }
+
+    private func reset() {
+        sequence.reset()
+        isRunning = false
     }
 
     private func timeString(_ seconds: Int) -> String {

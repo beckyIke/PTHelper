@@ -20,6 +20,10 @@ struct ExerciseDetailView: View {
                 LabeledContent("Default Sets", value: "\(exercise.defaultSets)")
                 if exercise.isTimeBased {
                     LabeledContent("Duration", value: "\(exercise.defaultDurationSeconds)s per set")
+                    if exercise.defaultTimesBothSides {
+                        LabeledContent("Sides", value: "Right and left")
+                        LabeledContent("Rest Between Sides", value: "\(exercise.defaultRestSeconds)s")
+                    }
                 } else {
                     LabeledContent("Default Reps", value: "\(exercise.defaultReps)")
                 }
@@ -57,7 +61,7 @@ struct ExerciseDetailView: View {
                                 }
                             }
                             if log.durationSeconds > 0 && log.repsCompleted == 0 {
-                                Text("\(log.setsCompleted) sets × \(log.durationSeconds)s")
+                                Text("\(log.setsCompleted) sets × \(log.durationSeconds)s\(log.performedBothSides ? "/side" : "")")
                                     .font(.subheadline)
                             } else {
                                 Text("\(log.setsCompleted) sets × \(log.repsCompleted) reps")

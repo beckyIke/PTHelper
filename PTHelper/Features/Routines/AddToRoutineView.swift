@@ -69,6 +69,8 @@ struct AddToRoutineView: View {
             sets: exercise.defaultSets,
             reps: exercise.defaultReps,
             durationSeconds: exercise.defaultDurationSeconds,
+            timesBothSides: exercise.defaultTimesBothSides,
+            restSeconds: exercise.defaultRestSeconds,
             order: order
         )
         re.routine = routine

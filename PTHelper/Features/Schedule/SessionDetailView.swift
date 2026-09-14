@@ -161,7 +161,7 @@ private struct SessionLogRow: View {
                 .font(.ptSerif(.subheadline, weight: .semibold))
             HStack(spacing: 8) {
                 if log.durationSeconds > 0 && log.repsCompleted == 0 {
-                    Text("\(log.setsCompleted) sets × \(log.durationSeconds)s")
+                    Text("\(log.setsCompleted) sets × \(log.durationSeconds)s\(log.performedBothSides ? "/side" : "")")
                         .font(.caption).foregroundColor(.secondary)
                 } else {
                     Text("\(log.setsCompleted) sets × \(log.repsCompleted) reps")
