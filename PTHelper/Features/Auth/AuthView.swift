@@ -60,6 +60,11 @@ struct AuthView: View {
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
                 .padding(.horizontal, 24)
 
+                if mode == .signIn {
+                    guestButton
+                        .padding(.top, 16)
+                }
+
                 Spacer(minLength: 48)
             }
         }
@@ -165,6 +170,21 @@ struct AuthView: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    private var guestButton: some View {
+        Button {
+            authVM.continueAsGuest()
+        } label: {
+            Text("Continue as Guest")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+        }
+        .padding(.horizontal, 24)
     }
 
     // MARK: - Banners

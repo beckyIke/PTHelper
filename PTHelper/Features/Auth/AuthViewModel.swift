@@ -9,10 +9,14 @@ final class AuthViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    private(set) var isGuest: Bool
+
+    var isAuthorized: Bool { isSignedIn || isGuest }
     var isSignedIn: Bool { session != nil }
     var currentUser: User? { session?.user }
 
     init() {
+        isGuest = UserDefaults.standard.bool(forKey: "pthelper.isGuest")
         Task { await listenForAuthChanges() }
     }
 
@@ -22,11 +26,24 @@ final class AuthViewModel {
         for await (_, session) in supabase.auth.authStateChanges {
             self.session = session
             if let session {
+                clearGuestMode()
                 await loadProfile(userId: session.user.id)
             } else {
                 profile = nil
             }
         }
+    }
+
+    // MARK: - Guest
+
+    func continueAsGuest() {
+        isGuest = true
+        UserDefaults.standard.set(true, forKey: "pthelper.isGuest")
+    }
+
+    func clearGuestMode() {
+        isGuest = false
+        UserDefaults.standard.removeObject(forKey: "pthelper.isGuest")
     }
 
     // MARK: - Sign in / up / out
@@ -44,6 +61,7 @@ final class AuthViewModel {
     }
 
     func signOut() async {
+        clearGuestMode()
         await run { try await supabase.auth.signOut() }
     }
 
@@ -63,7 +81,6 @@ final class AuthViewModel {
                 .execute()
                 .value
         } catch {
-            // Profile row may not exist yet on first sign-up
             profile = UserProfile(id: userId)
         }
     }

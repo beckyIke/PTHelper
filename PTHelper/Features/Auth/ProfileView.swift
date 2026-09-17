@@ -10,6 +10,60 @@ struct ProfileView: View {
     @State private var savedConfirmation = false
 
     var body: some View {
+        if authVM.isGuest {
+            guestPrompt
+        } else {
+            profileContent
+        }
+    }
+
+    private var guestPrompt: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 56, weight: .light))
+                .foregroundColor(.ptTerracotta)
+            VStack(spacing: 8) {
+                Text("You're browsing as a guest")
+                    .font(.ptSerif(.title3, weight: .semibold))
+                Text("Create a free account to save your routines, track progress, and sync across devices.")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+            VStack(spacing: 12) {
+                NavigationLink {
+                    AuthView()
+                } label: {
+                    Text("Create Account")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.ptTerracotta)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 32)
+
+                Button {
+                    Task { await authVM.signOut() }
+                } label: {
+                    Text("Exit Guest Mode")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.ptBackground.ignoresSafeArea())
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    @ViewBuilder
+    private var profileContent: some View {
         List {
             // Account info
             Section {
@@ -103,6 +157,8 @@ struct ProfileView: View {
         .onAppear { populateFields() }
         .onChange(of: authVM.profile) { populateFields() }
     }
+
+    // MARK: - Helpers
 
     private func populateFields() {
         fullName = authVM.profile?.fullName ?? ""

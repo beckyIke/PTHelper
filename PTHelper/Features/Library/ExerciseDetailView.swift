@@ -25,6 +25,17 @@ struct ExerciseDetailView: View {
                 }
             }
 
+            Section {
+                ExerciseTimerView(
+                    targetSeconds: exercise.isTimeBased ? exercise.defaultDurationSeconds : 0
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            } header: {
+                Text(exercise.isTimeBased ? "Timer (\(exercise.defaultDurationSeconds)s)" : "Stopwatch")
+                    .font(.ptSerif(.subheadline, weight: .semibold))
+            }
+
             if !exercise.exerciseDescription.isEmpty {
                 Section("Instructions") {
                     Text(exercise.exerciseDescription)

@@ -10,6 +10,7 @@ struct RoutineDetailView: View {
     @State private var showingRename = false
     @State private var pendingName = ""
     @State private var showingClearRecurrenceAlert = false
+    @State private var activeWorkoutSession: ScheduledSession?
 
     var sortedExercises: [RoutineExercise] {
         routine.exercises.sorted { $0.order < $1.order }
@@ -17,6 +18,24 @@ struct RoutineDetailView: View {
 
     var body: some View {
         List {
+            if !routine.exercises.isEmpty {
+                Section {
+                    Button {
+                        startWorkout()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Label("Start Workout", systemImage: "play.fill")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowBackground(Color.ptTerracotta)
+                }
+            }
+
             if routine.exercises.isEmpty {
                 Section {
                     ContentUnavailableView(
@@ -150,6 +169,15 @@ struct RoutineDetailView: View {
         .sheet(isPresented: $showingScheduler) {
             AddSessionView(preselectedRoutine: routine)
         }
+        .sheet(item: $activeWorkoutSession) { session in
+            SessionWorkoutView(session: session)
+        }
+    }
+
+    private func startWorkout() {
+        let session = ScheduledSession(routine: routine, scheduledDate: Date())
+        modelContext.insert(session)
+        activeWorkoutSession = session
     }
 
     private func removeExercises(offsets: IndexSet) {
@@ -239,6 +267,7 @@ struct EditRoutineExerciseView: View {
                     if routineExercise.isTimeBased {
                         Stepper("Duration: \(routineExercise.durationSeconds)s",
                                 value: $routineExercise.durationSeconds, in: 5...600, step: 5)
+                        Toggle("Each Side", isOn: $routineExercise.perSide)
                     } else {
                         Stepper("Reps: \(routineExercise.reps)", value: $routineExercise.reps, in: 1...100)
                     }

@@ -84,6 +84,7 @@ extension Routine {
     var durationSeconds: Int
     var order: Int
     var notes: String
+    var perSide: Bool
 
     var routine: Routine?
     var exercise: Exercise?
@@ -94,7 +95,8 @@ extension Routine {
         reps: Int,
         durationSeconds: Int = 0,
         order: Int = 0,
-        notes: String = ""
+        notes: String = "",
+        perSide: Bool = false
     ) {
         self.exercise = exercise
         self.sets = sets
@@ -102,6 +104,7 @@ extension Routine {
         self.durationSeconds = durationSeconds
         self.order = order
         self.notes = notes
+        self.perSide = perSide
     }
 }
 
@@ -110,7 +113,8 @@ extension RoutineExercise {
 
     var displayTarget: String {
         if isTimeBased {
-            return "\(sets) × \(durationSeconds)s"
+            let suffix = perSide ? " each side" : ""
+            return "\(sets) × \(durationSeconds)s\(suffix)"
         }
         return "\(sets) × \(reps) reps"
     }

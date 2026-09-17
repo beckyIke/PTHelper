@@ -5,7 +5,7 @@ struct ContentView: View {
     @Environment(AuthViewModel.self) private var authVM
 
     var body: some View {
-        if authVM.isSignedIn {
+        if authVM.isAuthorized {
             MainTabView()
         } else {
             AuthView()

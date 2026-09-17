@@ -142,6 +142,8 @@ struct ExerciseInputView: View {
     let onNext: () -> Void
     let isLast: Bool
 
+    @State private var restDuration = 30
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -171,24 +173,53 @@ struct ExerciseInputView: View {
                     .padding(.top, 8)
                 }
 
-                // Timer
-                GroupBox {
-                    ExerciseTimerView(
-                        targetSeconds: routineExercise.isTimeBased ? routineExercise.durationSeconds : 0,
-                        onComplete: { actual in
-                            if routineExercise.isTimeBased {
-                                entry.durationSeconds = actual
-                            }
+                // Timer (timed exercises only)
+                if routineExercise.isTimeBased {
+                    if routineExercise.perSide {
+                        GroupBox {
+                            ExerciseTimerView(
+                                targetSeconds: routineExercise.durationSeconds,
+                                onComplete: { actual in entry.durationSeconds = actual }
+                            )
+                        } label: {
+                            Label("Left Side", systemImage: "timer")
+                                .font(.subheadline)
                         }
-                    )
-                } label: {
-                    Label(
-                        routineExercise.isTimeBased ? "Countdown Timer" : "Stopwatch",
-                        systemImage: routineExercise.isTimeBased ? "timer" : "stopwatch"
-                    )
-                    .font(.subheadline)
+                        .padding(.horizontal)
+
+                        GroupBox {
+                            ExerciseTimerView(targetSeconds: routineExercise.durationSeconds)
+                        } label: {
+                            Label("Right Side", systemImage: "timer")
+                                .font(.subheadline)
+                        }
+                        .padding(.horizontal)
+                    } else {
+                        GroupBox {
+                            ExerciseTimerView(
+                                targetSeconds: routineExercise.durationSeconds,
+                                onComplete: { actual in entry.durationSeconds = actual }
+                            )
+                        } label: {
+                            Label("Countdown Timer", systemImage: "timer")
+                                .font(.subheadline)
+                        }
+                        .padding(.horizontal)
+                    }
+
+                    GroupBox {
+                        VStack(spacing: 12) {
+                            Stepper("Rest: \(restDuration)s", value: $restDuration, in: 5...300, step: 5)
+                                .font(.subheadline)
+                            ExerciseTimerView(targetSeconds: restDuration)
+                                .id(restDuration)
+                        }
+                    } label: {
+                        Label("Break Timer", systemImage: "figure.stand")
+                            .font(.subheadline)
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
 
                 // Log inputs
                 GroupBox {
