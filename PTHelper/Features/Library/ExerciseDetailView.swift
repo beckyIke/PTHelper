@@ -14,6 +14,18 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         List {
+            if let animation = ExerciseAnimation.named(exercise.name) {
+                Section {
+                    ExerciseFigureView(animation: animation)
+                        .padding(PTSpacing.md)
+                        .frame(maxWidth: .infinity)
+                        .ptGlass()
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .ptEntrance()
+                }
+            }
+
             Section("Details") {
                 LabeledContent("Category", value: exercise.category)
                 LabeledContent("Body Part", value: exercise.bodyPart)

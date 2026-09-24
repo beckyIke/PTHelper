@@ -87,19 +87,16 @@ struct SessionWorkoutView: View {
     private var finishedView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "checkmark")
-                .font(.system(size: 52, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 120, height: 120)
-                .glassEffect(.regular.tint(.ptSecondary), in: .circle)
-                .symbolEffect(.bounce, value: confettiTrigger)
-                .ptEntrance()
-            Text("Workout Complete!")
-                .font(.ptSerif(.title, weight: .bold))
-                .ptEntrance(index: 2)
-            Text("Tap Finish to save your results.")
+            WorkoutCelebrationView(trigger: confettiTrigger, exerciseCount: exercises.count)
+                .contentShape(Rectangle())
+                // Tap to celebrate again.
+                .onTapGesture { confettiTrigger += 1 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Plays the celebration again")
+            Text("Tap Save & Finish to log your results.")
+                .font(.footnote)
                 .foregroundColor(.secondary)
-                .ptEntrance(index: 3)
+                .ptEntrance(index: 8)
             Spacer()
             Button {
                 finishWorkout()
@@ -165,6 +162,15 @@ struct ExerciseInputView: View {
                 // Header
                 if let exercise = routineExercise.exercise {
                     VStack(spacing: 6) {
+                        if let animation = ExerciseAnimation.named(exercise.name) {
+                            ExerciseFigureView(animation: animation)
+                                .frame(maxHeight: 180)
+                                .padding(PTSpacing.md)
+                                .frame(maxWidth: .infinity)
+                                .ptGlass()
+                                .padding(.horizontal)
+                                .padding(.bottom, PTSpacing.sm)
+                        }
                         Text(exercise.name)
                             .font(.ptSerif(.title2, weight: .bold))
                             .multilineTextAlignment(.center)

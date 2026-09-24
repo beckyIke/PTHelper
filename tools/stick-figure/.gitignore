@@ -1,0 +1,13 @@
+# Compiled tools and working files
+inspect
+sheet
+overlay
+pose
+render
+frames/
+overlays/
+stills/
+*.mp4
+*.png
+raw.json
+preview

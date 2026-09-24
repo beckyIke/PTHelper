@@ -11,6 +11,7 @@ struct RoutineDetailView: View {
     @State private var pendingName = ""
     @State private var showingClearRecurrenceAlert = false
     @State private var activeWorkoutSession: ScheduledSession?
+    @State private var activeLaunch: WorkoutLauncher.Launch?
 
     var sortedExercises: [RoutineExercise] {
         routine.exercises.sorted { $0.order < $1.order }
@@ -176,18 +177,18 @@ struct RoutineDetailView: View {
         .sheet(isPresented: $showingScheduler) {
             AddSessionView(preselectedRoutine: routine)
         }
-        .sheet(item: $activeWorkoutSession) { session in
+        .sheet(item: $activeWorkoutSession, onDismiss: {
+            if let activeLaunch { WorkoutLauncher.finish(activeLaunch, context: modelContext) }
+            activeLaunch = nil
+        }) { session in
             SessionWorkoutView(session: session)
         }
     }
 
     private func startWorkout() {
-        let session = ScheduledSession(routine: routine, scheduledDate: Date())
-        modelContext.insert(session)
-        // Save now so the session's ID is permanent. Otherwise the first autosave mid-workout changes the ID,
-        // and `.sheet(item:)` dismisses and re-presents the workout from the start.
-        try? modelContext.save()
-        activeWorkoutSession = session
+        let launch = WorkoutLauncher.start(routine, context: modelContext)
+        activeLaunch = launch
+        activeWorkoutSession = launch.session
     }
 
     private func removeExercises(offsets: IndexSet) {
