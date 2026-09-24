@@ -99,6 +99,9 @@ struct AddSessionView: View {
     private func schedule() {
         guard let routine = selectedRoutine else { return }
         modelContext.insert(ScheduledSession(routine: routine, scheduledDate: scheduledDate))
+        // Save now so the session's ID is permanent before it appears in the schedule list — an ID change on a
+        // later autosave would rebuild its row and pop an open session (and its workout) off the stack.
+        try? modelContext.save()
         dismiss()
     }
 }

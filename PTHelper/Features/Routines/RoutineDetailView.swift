@@ -177,6 +177,9 @@ struct RoutineDetailView: View {
     private func startWorkout() {
         let session = ScheduledSession(routine: routine, scheduledDate: Date())
         modelContext.insert(session)
+        // Save now so the session's ID is permanent. Otherwise the first autosave mid-workout changes the ID,
+        // and `.sheet(item:)` dismisses and re-presents the workout from the start.
+        try? modelContext.save()
         activeWorkoutSession = session
     }
 
@@ -188,7 +191,9 @@ struct RoutineDetailView: View {
     }
 
     private func removePendingRecurringSessions() {
-        let pending = routine.sessions.filter { !$0.isCompleted }
+        // Only remove today's and future sessions — past missed sessions stay as history for streaks.
+        let today = Calendar.current.startOfDay(for: Date())
+        let pending = routine.sessions.filter { !$0.isCompleted && $0.scheduledDate >= today }
         for session in pending {
             modelContext.delete(session)
         }

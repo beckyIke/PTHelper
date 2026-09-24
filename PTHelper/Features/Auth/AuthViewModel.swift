@@ -10,8 +10,14 @@ final class AuthViewModel {
     var errorMessage: String?
 
     private(set) var isGuest: Bool
+    /// The server ended the session while the app was in use (revoked or failed token refresh).
+    /// The app stays open — data is local — and prompts the user to sign in again instead of
+    /// replacing the whole UI with the login screen mid-workout.
+    private(set) var sessionExpired = false
+    /// Set while the user is signing out themselves, so that sign-out isn't treated as an expiry.
+    private var isSigningOut = false
 
-    var isAuthorized: Bool { isSignedIn || isGuest }
+    var isAuthorized: Bool { isSignedIn || isGuest || sessionExpired }
     var isSignedIn: Bool { session != nil }
     var currentUser: User? { session?.user }
 
@@ -23,9 +29,15 @@ final class AuthViewModel {
     // MARK: - Auth state
 
     private func listenForAuthChanges() async {
-        for await (_, session) in supabase.auth.authStateChanges {
+        for await (event, session) in supabase.auth.authStateChanges {
+            if event == .signedOut {
+                // Only an unexpected sign-out while signed in counts as an expiry; the user's own sign-out doesn't.
+                if self.session != nil && !isSigningOut { sessionExpired = true }
+                isSigningOut = false
+            }
             self.session = session
             if let session {
+                sessionExpired = false
                 clearGuestMode()
                 await loadProfile(userId: session.user.id)
             } else {
@@ -37,6 +49,7 @@ final class AuthViewModel {
     // MARK: - Guest
 
     func continueAsGuest() {
+        sessionExpired = false
         isGuest = true
         UserDefaults.standard.set(true, forKey: "pthelper.isGuest")
     }
@@ -61,7 +74,10 @@ final class AuthViewModel {
     }
 
     func signOut() async {
+        // Cleared when the resulting `.signedOut` event arrives — it's delivered asynchronously.
+        isSigningOut = session != nil
         clearGuestMode()
+        sessionExpired = false
         await run { try await supabase.auth.signOut() }
     }
 

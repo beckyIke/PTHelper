@@ -29,11 +29,10 @@ struct RecurrenceManager {
                 cursor = calendar.date(byAdding: .day, value: 1, to: cursor)!
             }
 
-            // Days that already have a non-completed session for this routine
+            // Days that already have a session for this routine. Completed sessions count too,
+            // otherwise finishing today's workout would schedule a second one on the next launch.
             let existingDays = Set(
-                routine.sessions
-                    .filter { !$0.isCompleted }
-                    .map { calendar.startOfDay(for: $0.scheduledDate) }
+                routine.sessions.map { calendar.startOfDay(for: $0.scheduledDate) }
             )
 
             let timeComponents = calendar.dateComponents([.hour, .minute], from: routine.recurrenceTime)

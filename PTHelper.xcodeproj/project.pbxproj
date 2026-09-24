@@ -15,8 +15,19 @@
 		2B49A96D303BCC9B001E1548 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2B49A96C303BCC9B001E1548 /* Supabase */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2BA0C0012F80000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2B629BBD2F7899C1003FE99D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2B629BC42F7899C1003FE99D;
+			remoteInfo = PTHelper;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		2B629BC52F7899C1003FE99D /* PTHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PTHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2BA0C0022F80000000000001 /* PTHelperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PTHelperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -38,6 +49,11 @@
 			path = PTHelper;
 			sourceTree = "<group>";
 		};
+		2BA0C0032F80000000000001 /* PTHelperTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PTHelperTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +70,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BA0C0042F80000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -61,6 +84,7 @@
 			isa = PBXGroup;
 			children = (
 				2B629BC72F7899C1003FE99D /* PTHelper */,
+				2BA0C0032F80000000000001 /* PTHelperTests */,
 				2B629BC62F7899C1003FE99D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -69,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				2B629BC52F7899C1003FE99D /* PTHelper.app */,
+				2BA0C0022F80000000000001 /* PTHelperTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +129,29 @@
 			productReference = 2B629BC52F7899C1003FE99D /* PTHelper.app */;
 			productType = "com.apple.product-type.application";
 		};
+		2BA0C0052F80000000000001 /* PTHelperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2BA0C0062F80000000000001 /* Build configuration list for PBXNativeTarget "PTHelperTests" */;
+			buildPhases = (
+				2BA0C0072F80000000000001 /* Sources */,
+				2BA0C0042F80000000000001 /* Frameworks */,
+				2BA0C0082F80000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2BA0C0092F80000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2BA0C0032F80000000000001 /* PTHelperTests */,
+			);
+			name = PTHelperTests;
+			packageProductDependencies = (
+			);
+			productName = PTHelperTests;
+			productReference = 2BA0C0022F80000000000001 /* PTHelperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -116,6 +164,10 @@
 				TargetAttributes = {
 					2B629BC42F7899C1003FE99D = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					2BA0C0052F80000000000001 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 2B629BC42F7899C1003FE99D;
 					};
 				};
 			};
@@ -137,12 +189,20 @@
 			projectRoot = "";
 			targets = (
 				2B629BC42F7899C1003FE99D /* PTHelper */,
+				2BA0C0052F80000000000001 /* PTHelperTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		2B629BC32F7899C1003FE99D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2BA0C0082F80000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -159,7 +219,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2BA0C0072F80000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2BA0C0092F80000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2B629BC42F7899C1003FE99D /* PTHelper */;
+			targetProxy = 2BA0C0012F80000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2B629BD42F7899C2003FE99D /* Debug */ = {
@@ -348,6 +423,44 @@
 			};
 			name = Release;
 		};
+		2BA0C00A2F80000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spotlily.PTHelperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PTHelper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PTHelper";
+			};
+			name = Debug;
+		};
+		2BA0C00B2F80000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.spotlily.PTHelperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PTHelper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PTHelper";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -365,6 +478,15 @@
 			buildConfigurations = (
 				2B629BD42F7899C2003FE99D /* Debug */,
 				2B629BD52F7899C2003FE99D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2BA0C0062F80000000000001 /* Build configuration list for PBXNativeTarget "PTHelperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2BA0C00A2F80000000000001 /* Debug */,
+				2BA0C00B2F80000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
