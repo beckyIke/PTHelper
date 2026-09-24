@@ -50,7 +50,7 @@ struct AddSessionView: View {
                         selection: $scheduledDate,
                         displayedComponents: [.date, .hourAndMinute]
                     )
-                    .tint(.ptTerracotta)
+                    .tint(.ptAccent)
                 } header: {
                     Text("Date & Time")
                         .font(.ptSerif(.subheadline, weight: .semibold))
@@ -84,12 +84,12 @@ struct AddSessionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .foregroundColor(.ptTerracotta)
+                        .foregroundColor(.ptAccent)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Schedule") { schedule() }
                         .font(.ptSerif(.body, weight: .semibold))
-                        .foregroundColor(canSchedule ? .ptTerracotta : .secondary)
+                        .foregroundColor(canSchedule ? .ptAccent : .secondary)
                         .disabled(!canSchedule)
                 }
             }

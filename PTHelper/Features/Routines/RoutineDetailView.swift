@@ -23,16 +23,15 @@ struct RoutineDetailView: View {
                     Button {
                         startWorkout()
                     } label: {
-                        HStack {
-                            Spacer()
-                            Label("Start Workout", systemImage: "play.fill")
-                                .fontWeight(.semibold)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
+                        Label("Start Workout", systemImage: "play.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.ptSerif(.body, weight: .semibold))
+                            .frame(maxWidth: .infinity)
                     }
-                    .listRowBackground(Color.ptTerracotta)
+                    .ptPrimaryButton()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .ptEntrance()
                 }
             }
 
@@ -46,13 +45,17 @@ struct RoutineDetailView: View {
                     .listRowBackground(Color.clear)
                 }
             } else {
-                Section("Exercises") {
-                    ForEach(sortedExercises) { re in
+                Section {
+                    ForEach(Array(sortedExercises.enumerated()), id: \.element.id) { index, re in
                         if let exercise = re.exercise {
                             RoutineExerciseRow(routineExercise: re, exercise: exercise)
+                                .ptGlassRow()
+                                .ptEntrance(index: index + 1)
                         }
                     }
                     .onDelete(perform: removeExercises)
+                } header: {
+                    PTSectionHeader("Exercises")
                 }
             }
 
@@ -101,12 +104,13 @@ struct RoutineDetailView: View {
                     )
                 }
             } header: {
-                Text("Recurrence")
+                PTSectionHeader("Recurrence")
             } footer: {
                 if routine.recurrence != .none {
                     Text(routine.recurrenceSummary)
                 }
             }
+            .ptGlassRow()
 
             Section {
                 Button {
@@ -121,7 +125,10 @@ struct RoutineDetailView: View {
                     Label("Schedule Session", systemImage: "calendar.badge.plus")
                 }
             }
+            .ptGlassRow()
         }
+        .listRowSpacing(8)
+        .animation(PTMotion.snappy, value: routine.recurrence)
         .ptBackground()
         .navigationTitle(routine.name)
         .navigationBarTitleDisplayMode(.large)
@@ -220,11 +227,15 @@ struct WeekdayPicker: View {
                     Text(label)
                         .font(.system(size: 14, weight: .semibold))
                         .frame(width: 36, height: 36)
-                        .background(isOn ? Color.accentColor : Color(.systemGray5))
-                        .foregroundColor(isOn ? .white : .primary)
-                        .clipShape(Circle())
+                        .foregroundStyle(isOn ? .white : .primary)
                 }
                 .buttonStyle(.plain)
+                .glassEffect(.regular.tint(isOn ? .ptAccent : nil).interactive(), in: .circle)
+                .scaleEffect(isOn ? 1.08 : 1)
+                .animation(PTMotion.bouncy, value: isOn)
+                .sensoryFeedback(.selection, trigger: isOn)
+                .accessibilityLabel(Calendar.current.weekdaySymbols[number - 1])
+                .accessibilityAddTraits(isOn ? .isSelected : [])
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

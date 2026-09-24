@@ -28,6 +28,7 @@ struct LibraryView: View {
             List {
                 // Category filter chips
                 ScrollView(.horizontal, showsIndicators: false) {
+                    GlassEffectContainer(spacing: 8) {
                     HStack(spacing: 8) {
                         FilterChip(title: "All", isSelected: selectedCategory == nil) {
                             selectedCategory = nil
@@ -39,6 +40,8 @@ struct LibraryView: View {
                         }
                     }
                     .padding(.horizontal)
+                    .padding(.vertical, 4)
+                    }
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
@@ -50,14 +53,15 @@ struct LibraryView: View {
                             NavigationLink(destination: ExerciseDetailView(exercise: exercise)) {
                                 ExerciseRowView(exercise: exercise)
                             }
-                            .listRowBackground(Color.white)
+                            .ptGlassRow()
                         }
                     } header: {
-                        Text(category)
-                            .font(.ptSerif(.subheadline, weight: .semibold))
+                        PTSectionHeader(category)
                     }
                 }
             }
+            .listRowSpacing(8)
+            .animation(PTMotion.snappy, value: selectedCategory)
             .ptBackground()
             .searchable(text: $searchText, prompt: "Search exercises or body part")
             .navigationTitle("Exercise Library")
@@ -81,16 +85,8 @@ struct FilterChip: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.caption)
-                .fontWeight(isSelected ? .semibold : .regular)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isSelected ? Color.ptTerracotta : Color.white)
-                .foregroundColor(isSelected ? .white : .primary)
-                .clipShape(Capsule())
-                .shadow(color: .black.opacity(isSelected ? 0 : 0.05), radius: 3, x: 0, y: 1)
+        PTChip(title: title, isSelected: isSelected) {
+            withAnimation(PTMotion.snappy) { action() }
         }
     }
 }
@@ -98,7 +94,15 @@ struct FilterChip: View {
 struct ExerciseRowView: View {
     let exercise: Exercise
 
+    private var category: ExerciseCategory? { ExerciseCategory(rawValue: exercise.category) }
+
     var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: category?.systemImage ?? "figure.walk")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.ptAccent)
+                .frame(width: 40, height: 40)
+                .background(Color.ptAccent.opacity(0.15), in: .circle)
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(exercise.name)
@@ -106,7 +110,7 @@ struct ExerciseRowView: View {
                 if exercise.isCustom {
                     Image(systemName: "person.fill")
                         .font(.caption2)
-                        .foregroundColor(.ptTerracotta)
+                        .foregroundColor(.ptAccent)
                 }
             }
             HStack(spacing: 4) {
@@ -117,6 +121,7 @@ struct ExerciseRowView: View {
                 Text(exercise.displayTarget)
                     .font(.caption).foregroundColor(.secondary)
             }
+        }
         }
         .padding(.vertical, 4)
     }

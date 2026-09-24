@@ -25,8 +25,13 @@ struct AuthView: View {
                 // ── Brand header ──
                 VStack(spacing: 8) {
                     Image(systemName: "figure.walk.motion")
-                        .font(.system(size: 40, weight: .light))
-                        .foregroundColor(.ptTerracotta)
+                        .font(.system(size: 40, weight: .regular))
+                        .foregroundStyle(.white)
+                        .frame(width: 88, height: 88)
+                        .glassEffect(.regular.tint(.ptAccent).interactive(), in: .circle)
+                        .symbolEffect(.bounce, options: .repeat(.periodic(delay: 3)))
+                        .padding(.bottom, 8)
+                        .ptEntrance()
                     Text("PTHelper")
                         .font(.ptSerif(.largeTitle, weight: .bold))
                     Text("Your physical therapy companion")
@@ -35,6 +40,7 @@ struct AuthView: View {
                 }
                 .padding(.top, 60)
                 .padding(.bottom, 40)
+                .ptEntrance(index: 1)
 
                 // ── Card ──
                 VStack(spacing: 20) {
@@ -55,21 +61,22 @@ struct AuthView: View {
                     }
                 }
                 .padding(24)
-                .background(Color(.systemBackground))
-                .cornerRadius(18)
-                .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
+                .ptGlass()
                 .padding(.horizontal, 24)
+                .ptEntrance(index: 2)
 
                 if mode == .signIn {
                     guestButton
                         .padding(.top, 16)
+                        .transition(.blurReplace)
                 }
 
                 Spacer(minLength: 48)
             }
         }
-        .background(Color.ptBackground.ignoresSafeArea())
-        .animation(.easeInOut(duration: 0.2), value: mode)
+        .scrollDismissesKeyboard(.interactively)
+        .background { PTAmbientBackground().ignoresSafeArea() }
+        .animation(PTMotion.bouncy, value: mode)
     }
 
     // MARK: - Fields
@@ -123,14 +130,12 @@ struct AuthView: View {
                 } else {
                     Text(submitLabel)
                         .fontWeight(.semibold)
+                        .contentTransition(.opacity)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(canSubmit ? Color.ptTerracotta : Color.ptTerracotta.opacity(0.4))
-            .foregroundColor(.white)
-            .cornerRadius(12)
         }
+        .ptPrimaryButton()
         .disabled(!canSubmit || authVM.isLoading)
         .padding(.top, 4)
     }
@@ -155,11 +160,11 @@ struct AuthView: View {
             if mode == .signIn {
                 Button("Forgot password?") { mode = .resetPassword }
                     .font(.subheadline)
-                    .foregroundColor(.ptTerracotta)
+                    .foregroundColor(.ptAccent)
                 Divider()
                 Button("Create an account") { mode = .signUp }
                     .font(.subheadline.weight(.medium))
-                    .foregroundColor(.ptTerracotta)
+                    .foregroundColor(.ptAccent)
             } else {
                 Button("Back to sign in") {
                     mode = .signIn
@@ -178,12 +183,9 @@ struct AuthView: View {
         } label: {
             Text("Continue as Guest")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
         }
+        .ptSecondaryButton()
         .padding(.horizontal, 24)
     }
 
@@ -199,15 +201,16 @@ struct AuthView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.08))
-        .cornerRadius(8)
+        .ptGlass(cornerRadius: PTRadius.sm, tint: .red.opacity(0.4))
+        .transition(.scale(scale: 0.95).combined(with: .opacity))
     }
 
     private var resetSentBanner: some View {
         VStack(spacing: 12) {
             Image(systemName: "envelope.badge.checkmark")
                 .font(.system(size: 36))
-                .foregroundColor(.ptTerracotta)
+                .foregroundColor(.ptAccent)
+                .symbolEffect(.bounce, options: .nonRepeating)
             Text("Check your email")
                 .font(.ptSerif(.headline, weight: .semibold))
             Text("We sent a password reset link to **\(email)**. Follow the link to set a new password.")
@@ -219,7 +222,7 @@ struct AuthView: View {
                 resetSent = false
             }
             .font(.subheadline.weight(.medium))
-            .foregroundColor(.ptTerracotta)
+            .foregroundColor(.ptAccent)
             .padding(.top, 4)
         }
         .padding(.vertical, 12)
@@ -270,10 +273,9 @@ private struct PTTextField: View {
                 }
             }
             .textContentType(textContentType)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: PTRadius.sm))
         }
     }
 }

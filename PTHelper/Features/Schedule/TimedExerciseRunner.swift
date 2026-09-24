@@ -134,7 +134,7 @@ struct TimedExerciseRunner: View {
 
     private var isResting: Bool { sequence.phase == .rest }
     private var isFinished: Bool { sequence.phase == .finished }
-    private var ringColor: Color { isResting || isFinished ? .ptSage : .ptTerracotta }
+    private var ringColor: Color { isResting || isFinished ? .ptSecondary : .ptAccent }
 
     private var ringProgress: CGFloat {
         guard sequence.phaseLength > 0 else { return 0 }
@@ -177,7 +177,7 @@ struct TimedExerciseRunner: View {
         VStack(spacing: 4) {
             Text(isFinished ? "All sets done!" : isResting ? "Break" : sequence.currentStep.title)
                 .font(.headline)
-                .foregroundColor(isResting || isFinished ? .ptSage : .primary)
+                .foregroundColor(isResting || isFinished ? .ptSecondary : .primary)
                 .contentTransition(.opacity)
             if isResting, let next = sequence.nextStep {
                 Text("Up next: \(next.title)")
@@ -196,7 +196,7 @@ struct TimedExerciseRunner: View {
     private var dial: some View {
         ZStack {
             Circle()
-                .stroke(Color(.systemGray5), lineWidth: 8)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 8)
             Circle()
                 .trim(from: 0, to: ringProgress)
                 .stroke(ringColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
@@ -208,7 +208,8 @@ struct TimedExerciseRunner: View {
                 if isFinished {
                     Image(systemName: "checkmark")
                         .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.ptSage)
+                        .foregroundColor(.ptSecondary)
+                        .transition(.symbolEffect(.drawOn))
                 } else {
                     Text(timeString(sequence.remaining))
                         .font(.system(size: 34, weight: .bold, design: .monospaced))
@@ -231,9 +232,9 @@ struct TimedExerciseRunner: View {
         HStack(spacing: 4) {
             ForEach(sequence.steps.indices, id: \.self) { index in
                 Capsule()
-                    .fill(index < sequence.completedSteps ? Color.ptSage
-                          : index == sequence.stepIndex && !isResting ? Color.ptTerracotta
-                          : Color(.systemGray5))
+                    .fill(index < sequence.completedSteps ? Color.ptSecondary
+                          : index == sequence.stepIndex && !isResting ? Color.ptAccent
+                          : Color.primary.opacity(0.1))
                     .frame(height: 6)
             }
         }
@@ -243,54 +244,47 @@ struct TimedExerciseRunner: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 24) {
-            // Restart the current hold/break, or the whole exercise once finished
-            controlButton(isFinished ? "arrow.counterclockwise.circle" : "arrow.counterclockwise",
-                          label: isFinished ? "Start over" : "Restart timer") {
-                if isFinished {
-                    sequence.reset()
-                    onSetsCompleted(0)
-                } else {
-                    sequence.restartPhase()
+        GlassEffectContainer(spacing: 24) {
+            HStack(spacing: 24) {
+                // Restart the current hold/break, or the whole exercise once finished
+                PTGlassIconButton(
+                    systemImage: isFinished ? "arrow.counterclockwise.circle" : "arrow.counterclockwise",
+                    accessibilityLabel: isFinished ? "Start over" : "Restart timer"
+                ) {
+                    if isFinished {
+                        sequence.reset()
+                        onSetsCompleted(0)
+                    } else {
+                        sequence.restartPhase()
+                    }
                 }
-            }
 
-            Button {
-                if !hasStarted {
-                    // From now on, log the sets actually completed rather than the target.
-                    hasStarted = true
-                    onSetsCompleted(sequence.completedSets)
+                PTGlassIconButton(
+                    systemImage: isRunning ? "pause.fill" : "play.fill",
+                    size: 64,
+                    prominent: true,
+                    tint: isFinished ? .ptSecondary : .ptAccent,
+                    accessibilityLabel: isRunning ? "Pause" : "Start"
+                ) {
+                    if !hasStarted {
+                        // From now on, log the sets actually completed rather than the target.
+                        hasStarted = true
+                        onSetsCompleted(sequence.completedSets)
+                    }
+                    isRunning.toggle()
                 }
-                isRunning.toggle()
-            } label: {
-                Image(systemName: isRunning ? "pause.fill" : "play.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .frame(width: 60, height: 60)
-                    .background(isFinished ? Color.ptSage : Color.ptTerracotta)
-                    .foregroundColor(.white)
-                    .clipShape(Circle())
-            }
-            .disabled(isFinished)
-            .accessibilityLabel(isRunning ? "Pause" : "Start")
+                .disabled(isFinished)
 
-            // Skip the break, or end the hold early
-            controlButton("forward.end.fill", label: isResting ? "Skip break" : "End hold") {
-                handle(sequence.endPhase(breakSeconds: breakSeconds))
+                // Skip the break, or end the hold early
+                PTGlassIconButton(
+                    systemImage: "forward.end.fill",
+                    accessibilityLabel: isResting ? "Skip break" : "End hold"
+                ) {
+                    handle(sequence.endPhase(breakSeconds: breakSeconds))
+                }
+                .disabled(isFinished)
             }
-            .disabled(isFinished)
         }
-    }
-
-    private func controlButton(_ systemImage: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .semibold))
-                .frame(width: 48, height: 48)
-                .background(Color(.systemGray5))
-                .foregroundColor(.primary)
-                .clipShape(Circle())
-        }
-        .accessibilityLabel(label)
     }
 
     // MARK: Helpers

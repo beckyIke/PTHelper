@@ -21,8 +21,12 @@ struct ProfileView: View {
         VStack(spacing: 24) {
             Spacer()
             Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 56, weight: .light))
-                .foregroundColor(.ptTerracotta)
+                .font(.system(size: 52, weight: .light))
+                .foregroundColor(.ptAccent)
+                .frame(width: 110, height: 110)
+                .glassEffect(.regular.tint(.ptAccentSoft.opacity(0.5)), in: .circle)
+                .symbolEffect(.wiggle, options: .repeat(.periodic(delay: 4)))
+                .ptEntrance()
             VStack(spacing: 8) {
                 Text("You're browsing as a guest")
                     .font(.ptSerif(.title3, weight: .semibold))
@@ -32,6 +36,7 @@ struct ProfileView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             }
+            .ptEntrance(index: 1)
             VStack(spacing: 12) {
                 NavigationLink {
                     AuthView()
@@ -39,11 +44,8 @@ struct ProfileView: View {
                     Text("Create Account")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.ptTerracotta)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
                 }
+                .ptPrimaryButton()
                 .padding(.horizontal, 32)
 
                 Button {
@@ -54,10 +56,11 @@ struct ProfileView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            .ptEntrance(index: 2)
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.ptBackground.ignoresSafeArea())
+        .background { PTAmbientBackground().ignoresSafeArea() }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
     }
@@ -81,9 +84,9 @@ struct ProfileView: View {
                         .fontDesign(.monospaced)
                 }
             } header: {
-                Text("Account")
-                    .font(.ptSerif(.subheadline, weight: .semibold))
+                PTSectionHeader("Account")
             }
+            .ptGlassRow()
 
             // Editable profile
             Section {
@@ -107,15 +110,17 @@ struct ProfileView: View {
                 }
                 .padding(.vertical, 2)
             } header: {
-                Text("Profile")
-                    .font(.ptSerif(.subheadline, weight: .semibold))
+                PTSectionHeader("Profile")
             } footer: {
                 if savedConfirmation {
                     Label("Saved", systemImage: "checkmark.circle.fill")
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(.ptSecondary)
+                        .symbolEffect(.bounce, options: .nonRepeating)
+                        .transition(.blurReplace)
                 }
             }
+            .ptGlassRow()
 
             // Save button
             Section {
@@ -133,10 +138,10 @@ struct ProfileView: View {
                         Spacer()
                     }
                 }
-                .foregroundColor(isSaving ? .secondary : .ptTerracotta)
+                .foregroundColor(isSaving ? .secondary : .ptAccent)
                 .disabled(isSaving)
-                .listRowBackground(Color(.systemBackground))
             }
+            .ptGlassRow()
 
             // Sign out
             Section {
@@ -150,7 +155,10 @@ struct ProfileView: View {
                     }
                 }
             }
+            .ptGlassRow()
         }
+        .listRowSpacing(8)
+        .animation(PTMotion.snappy, value: savedConfirmation)
         .ptBackground()
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)

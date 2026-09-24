@@ -24,11 +24,15 @@ struct ExerciseDetailView: View {
                     LabeledContent("Default Reps", value: "\(exercise.defaultReps)")
                 }
             }
+            .ptGlassRow()
 
             Section {
                 ExerciseTimerView(
                     targetSeconds: exercise.isTimeBased ? exercise.defaultDurationSeconds : 0
                 )
+                .padding(PTSpacing.md)
+                .frame(maxWidth: .infinity)
+                .ptGlass()
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             } header: {
@@ -42,6 +46,7 @@ struct ExerciseDetailView: View {
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
+                .ptGlassRow()
             }
 
             if !exercise.notes.isEmpty {
@@ -50,6 +55,7 @@ struct ExerciseDetailView: View {
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
+                .ptGlassRow()
             }
 
             if !recentLogs.isEmpty {
@@ -83,8 +89,11 @@ struct ExerciseDetailView: View {
                         .padding(.vertical, 2)
                     }
                 }
+                .ptGlassRow()
             }
         }
+        .listRowSpacing(8)
+        .ptBackground()
         .navigationTitle(exercise.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

@@ -10,6 +10,7 @@ struct SessionWorkoutView: View {
 
     @State private var currentIndex = 0
     @State private var logEntries: [LogEntry] = []
+    @State private var confettiTrigger = 0
 
     struct LogEntry {
         var sets: Int
@@ -32,13 +33,13 @@ struct SessionWorkoutView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    SwiftUI.ProgressView(value: progress)
-                        .tint(.ptTerracotta)
+                VStack(spacing: 6) {
+                    PTProgressBar(value: progress)
                         .padding(.horizontal)
                     Text(allDone ? "All done!" : "Exercise \(currentIndex + 1) of \(exercises.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .contentTransition(.numericText())
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 12)
@@ -49,14 +50,21 @@ struct SessionWorkoutView: View {
                     ExerciseInputView(
                         routineExercise: exercises[currentIndex],
                         entry: $logEntries[currentIndex],
-                        onSkip: { currentIndex += 1 },
+                        onSkip: nextExercise,
                         onNext: nextExercise,
                         isLast: currentIndex == exercises.count - 1
                     )
                     .id(currentIndex)
+                    // Each exercise slides in from the right as the previous one leaves.
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
                 }
             }
-            .background(Color.ptBackground.ignoresSafeArea())
+            .frame(maxHeight: .infinity, alignment: .top)
+            .background { PTAmbientBackground().ignoresSafeArea() }
+            .overlay { PTConfetti(trigger: confettiTrigger).ignoresSafeArea() }
             .navigationTitle(session.routine?.name ?? "Workout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -79,29 +87,35 @@ struct SessionWorkoutView: View {
     private var finishedView: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 72))
-                .foregroundColor(.green)
+            Image(systemName: "checkmark")
+                .font(.system(size: 52, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 120, height: 120)
+                .glassEffect(.regular.tint(.ptSecondary), in: .circle)
+                .symbolEffect(.bounce, value: confettiTrigger)
+                .ptEntrance()
             Text("Workout Complete!")
-                .font(.title)
-                .fontWeight(.bold)
+                .font(.ptSerif(.title, weight: .bold))
+                .ptEntrance(index: 2)
             Text("Tap Finish to save your results.")
                 .foregroundColor(.secondary)
+                .ptEntrance(index: 3)
             Spacer()
             Button {
                 finishWorkout()
             } label: {
                 Text("Save & Finish")
+                    .font(.ptSerif(.body, weight: .semibold))
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.ptTerracotta)
-                    .foregroundColor(.white)
-                    .cornerRadius(14)
-                    .fontWeight(.semibold)
             }
+            .ptPrimaryButton()
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
+            .ptEntrance(index: 4)
         }
+        .onAppear { confettiTrigger += 1 }
+        .sensoryFeedback(.success, trigger: confettiTrigger)
+        .transition(.scale(scale: 0.9).combined(with: .opacity))
     }
 
     private func setupEntries() {
@@ -111,7 +125,9 @@ struct SessionWorkoutView: View {
         }
     }
 
-    private func nextExercise() { currentIndex += 1 }
+    private func nextExercise() {
+        withAnimation(PTMotion.bouncy) { currentIndex += 1 }
+    }
 
     private func finishWorkout() {
         for (index, re) in exercises.enumerated() {
@@ -158,7 +174,7 @@ struct ExerciseInputView: View {
                         Text("Target: \(routineExercise.displayTarget)")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(.ptTerracotta)
+                            .foregroundColor(.ptAccent)
                         if !exercise.exerciseDescription.isEmpty {
                             Text(exercise.exerciseDescription)
                                 .font(.callout)
@@ -169,24 +185,23 @@ struct ExerciseInputView: View {
                         }
                     }
                     .padding(.top, 8)
+                    .ptEntrance()
                 }
 
                 // Timer (timed exercises only) — runs every set/side with a break in between
                 if routineExercise.isTimeBased {
-                    GroupBox {
+                    PTGlassSection(title: "Timer", systemImage: "timer") {
                         TimedExerciseRunner(routineExercise: routineExercise) { completedSets in
                             entry.sets = completedSets
                             entry.durationSeconds = routineExercise.durationSeconds
                         }
-                    } label: {
-                        Label("Timer", systemImage: "timer")
-                            .font(.subheadline)
                     }
                     .padding(.horizontal)
+                    .ptEntrance(index: 1)
                 }
 
                 // Log inputs
-                GroupBox {
+                PTGlassSection(title: "Log Your Performance", systemImage: "pencil") {
                     VStack(spacing: 16) {
                         Stepper("Sets completed: \(entry.sets)", value: $entry.sets, in: 0...20)
 
@@ -220,35 +235,33 @@ struct ExerciseInputView: View {
 
                         TextField("Notes (optional)", text: $entry.notes, axis: .vertical)
                             .lineLimit(2...4)
-                            .textFieldStyle(.roundedBorder)
                             .font(.callout)
+                            .padding(12)
+                            .glassEffect(.regular, in: .rect(cornerRadius: PTRadius.sm))
                     }
-                    .padding(4)
-                } label: {
-                    Label("Log Your Performance", systemImage: "pencil")
-                        .font(.subheadline)
                 }
                 .padding(.horizontal)
+                .ptEntrance(index: 2)
 
                 // Actions
                 VStack(spacing: 12) {
                     Button(action: onNext) {
-                        Text(isLast ? "Complete Workout" : "Next Exercise")
+                        Label(isLast ? "Complete Workout" : "Next Exercise",
+                              systemImage: isLast ? "flag.checkered" : "arrow.right")
+                            .font(.ptSerif(.body, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.ptTerracotta)
-                            .foregroundColor(.white)
-                            .cornerRadius(14)
-                            .fontWeight(.semibold)
                     }
+                    .ptPrimaryButton()
                     Button("Skip", action: onSkip)
                         .foregroundColor(.secondary)
                         .font(.subheadline)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
+                .ptEntrance(index: 3)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
     }
 
     private func painLabel(for level: Int) -> String {
@@ -301,7 +314,7 @@ struct ExerciseTimerView: View {
             ZStack {
                 // Track ring
                 Circle()
-                    .stroke(Color(.systemGray5), lineWidth: 8)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 8)
                     .frame(width: 140, height: 140)
 
                 // Progress ring (countdown only)
@@ -309,7 +322,7 @@ struct ExerciseTimerView: View {
                     Circle()
                         .trim(from: 0, to: ringProgress)
                         .stroke(
-                            isComplete ? Color.ptSage : Color.ptTerracotta,
+                            isComplete ? Color.ptSecondary : Color.ptAccent,
                             style: StrokeStyle(lineWidth: 8, lineCap: .round)
                         )
                         .frame(width: 140, height: 140)
@@ -321,60 +334,49 @@ struct ExerciseTimerView: View {
                 VStack(spacing: 2) {
                     Text(timeString(displaySeconds))
                         .font(.system(size: 34, weight: .bold, design: .monospaced))
-                        .foregroundColor(isComplete ? .green : .primary)
-                        .contentTransition(.numericText())
+                        .foregroundColor(isComplete ? .ptSecondary : .primary)
+                        .contentTransition(.numericText(countsDown: isCountdown))
+                        .animation(.default, value: displaySeconds)
                     Text(isComplete ? "Done!" : isCountdown ? "remaining" : "elapsed")
                         .font(.caption)
-                        .foregroundColor(isComplete ? .green : .secondary)
+                        .foregroundColor(isComplete ? .ptSecondary : .secondary)
                 }
             }
 
             // Controls
-            HStack(spacing: 24) {
-                // Reset
-                Button {
-                    elapsed = 0
-                    isRunning = false
-                    isComplete = false
-                } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(width: 48, height: 48)
-                        .background(Color(.systemGray5))
-                        .foregroundColor(.primary)
-                        .clipShape(Circle())
-                }
-
-                // Play / Pause
-                Button {
-                    guard !isComplete else { return }
-                    isRunning.toggle()
-                } label: {
-                    Image(systemName: isRunning ? "pause.fill" : "play.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .frame(width: 60, height: 60)
-                        .background(isComplete ? Color.ptSage : Color.ptTerracotta)
-                        .foregroundColor(.white)
-                        .clipShape(Circle())
-                }
-                .disabled(isComplete)
-
-                // +30 s nudge (useful for time-based rest periods)
-                Button {
-                    if isCountdown {
-                        elapsed = max(0, elapsed - 30)
-                    } else {
-                        elapsed += 30
+            GlassEffectContainer(spacing: 24) {
+                HStack(spacing: 24) {
+                    PTGlassIconButton(systemImage: "arrow.counterclockwise", accessibilityLabel: "Reset") {
+                        elapsed = 0
+                        isRunning = false
+                        isComplete = false
                     }
-                } label: {
-                    Image(systemName: isCountdown ? "minus.circle" : "plus.circle")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(width: 48, height: 48)
-                        .background(Color(.systemGray5))
-                        .foregroundColor(.primary)
-                        .clipShape(Circle())
+
+                    PTGlassIconButton(
+                        systemImage: isRunning ? "pause.fill" : "play.fill",
+                        size: 64,
+                        prominent: true,
+                        tint: isComplete ? .ptSecondary : .ptAccent,
+                        accessibilityLabel: isRunning ? "Pause" : "Start"
+                    ) {
+                        guard !isComplete else { return }
+                        isRunning.toggle()
+                    }
+                    .disabled(isComplete)
+
+                    // ±30 s nudge (useful for time-based rest periods)
+                    PTGlassIconButton(
+                        systemImage: isCountdown ? "minus" : "plus",
+                        accessibilityLabel: isCountdown ? "Subtract 30 seconds" : "Add 30 seconds"
+                    ) {
+                        if isCountdown {
+                            elapsed = max(0, elapsed - 30)
+                        } else {
+                            elapsed += 30
+                        }
+                    }
+                    .disabled(isComplete)
                 }
-                .disabled(isComplete)
             }
 
             if isCountdown {

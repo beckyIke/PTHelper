@@ -63,8 +63,7 @@ struct ActivityView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                 } header: {
-                    Text("This Week")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("This Week")
                 }
 
                 Section {
@@ -72,19 +71,19 @@ struct ActivityView: View {
                         StatCard(
                             value: stats.consistency30Day.map { "\(Int(($0 * 100).rounded()))%" } ?? "—",
                             label: "30-Day Consistency",
-                            background: .ptSage,
+                            background: .ptSecondary,
                             foreground: .white
                         )
                         StatCard(
                             value: painTrendText(stats.painTrend),
                             label: "Pain vs. Last Month",
-                            background: .ptSalmon,
-                            foreground: .ptTerracotta
+                            background: .ptAccentSoft,
+                            foreground: .primary
                         )
                         StatCard(
                             value: stats.bestWeekRate.map { "\(Int(($0 * 100).rounded()))%" } ?? "—",
                             label: "Best Week",
-                            background: .ptTerracotta,
+                            background: .ptAccent,
                             foreground: .white
                         )
                     }
@@ -100,8 +99,7 @@ struct ActivityView: View {
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .listRowBackground(Color.clear)
                 } header: {
-                    Text("Weekly Completion")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("Weekly Completion")
                 }
 
                 Section {
@@ -111,8 +109,7 @@ struct ActivityView: View {
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         .listRowBackground(Color.clear)
                 } header: {
-                    Text("Last \(ProgressStats.historyWeeks) Weeks")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("Last \(ProgressStats.historyWeeks) Weeks")
                 }
 
                 Section {
@@ -120,9 +117,9 @@ struct ActivityView: View {
                     LabeledContent("Exercises Logged", value: "\(stats.exercisesThisMonth)")
                     LabeledContent("Total Reps", value: "\(stats.repsThisMonth)")
                 } header: {
-                    Text("This Month")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("This Month")
                 }
+                .ptGlassRow()
 
                 if !stats.personalRecords.isEmpty {
                     Section {
@@ -130,9 +127,9 @@ struct ActivityView: View {
                             PersonalRecordRow(record: record)
                         }
                     } header: {
-                        Text("Personal Bests")
-                            .font(.ptSerif(.subheadline, weight: .semibold))
+                        PTSectionHeader("Personal Bests")
                     }
+                    .ptGlassRow()
                 }
 
                 Section {
@@ -145,9 +142,9 @@ struct ActivityView: View {
                         LabeledContent("Avg Pain Level", value: String(format: "%.1f / 10", avg))
                     }
                 } header: {
-                    Text("All Time")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("All Time")
                 }
+                .ptGlassRow()
 
                 if allLogs.isEmpty {
                     Section {
@@ -164,11 +161,12 @@ struct ActivityView: View {
                             ActivityLogRow(log: log)
                         }
                     } header: {
-                        Text("Recent Activity")
-                            .font(.ptSerif(.subheadline, weight: .semibold))
+                        PTSectionHeader("Recent Activity")
                     }
+                    .ptGlassRow()
                 }
             }
+            .listRowSpacing(8)
             .ptBackground()
             .navigationTitle("Progress")
             .onAppear { appeared = true }
@@ -203,15 +201,16 @@ struct EncouragementBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "sparkles")
-                .foregroundColor(.ptTerracotta)
+                .foregroundColor(.ptAccent)
+                .symbolEffect(.wiggle, options: .repeat(.periodic(delay: 3)))
             Text(message)
                 .font(.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.ptSalmon.opacity(0.5))
-        .cornerRadius(14)
+        .ptGlass(cornerRadius: PTRadius.md, tint: .ptAccentSoft)
+        .ptEntrance()
     }
 }
 
@@ -221,7 +220,7 @@ struct PersonalRecordRow: View {
     var body: some View {
         HStack {
             Image(systemName: "trophy.fill")
-                .foregroundColor(.ptTerracotta)
+                .foregroundColor(.ptAccent)
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.exerciseName)
                     .font(.subheadline)

@@ -69,7 +69,7 @@ struct ExercisePickerView: View {
                                     .foregroundColor(.green)
                             } else {
                                 Image(systemName: "plus.circle")
-                                    .foregroundColor(.accentColor)
+                                    .foregroundColor(.ptAccent)
                             }
                         }
                     }

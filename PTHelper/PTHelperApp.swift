@@ -54,17 +54,11 @@ struct PTHelperApp: App {
 
 // MARK: - UIAppearance
 
+/// Serif bar titles on transparent bars, so the system Liquid Glass bars and scroll-edge effects show through.
 private func applyAppearance() {
-    let cream = UIColor(Color.ptBackground)
-    let terracotta = UIColor(Color.ptTerracotta)
-
-    // --- Navigation bar ---
     let navAppearance = UINavigationBarAppearance()
-    navAppearance.configureWithOpaqueBackground()
-    navAppearance.backgroundColor = cream
-    navAppearance.shadowColor = .clear
+    navAppearance.configureWithTransparentBackground()
 
-    // Serif large title
     if let serifDescriptor = UIFont.systemFont(ofSize: 34, weight: .bold)
         .fontDescriptor.withDesign(.serif) {
         navAppearance.largeTitleTextAttributes = [
@@ -72,7 +66,6 @@ private func applyAppearance() {
             .foregroundColor: UIColor.label,
         ]
     }
-    // Serif inline title
     if let serifDescriptor = UIFont.systemFont(ofSize: 17, weight: .semibold)
         .fontDescriptor.withDesign(.serif) {
         navAppearance.titleTextAttributes = [
@@ -84,18 +77,4 @@ private func applyAppearance() {
     UINavigationBar.appearance().standardAppearance   = navAppearance
     UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
     UINavigationBar.appearance().compactAppearance    = navAppearance
-    UINavigationBar.appearance().tintColor = terracotta
-
-    // --- Tab bar ---
-    let tabAppearance = UITabBarAppearance()
-    tabAppearance.configureWithOpaqueBackground()
-    tabAppearance.backgroundColor = cream
-    tabAppearance.shadowColor = .clear
-
-    // Selected item colour
-    tabAppearance.stackedLayoutAppearance.selected.iconColor   = terracotta
-    tabAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: terracotta]
-
-    UITabBar.appearance().standardAppearance   = tabAppearance
-    UITabBar.appearance().scrollEdgeAppearance = tabAppearance
 }

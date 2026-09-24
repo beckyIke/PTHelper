@@ -37,7 +37,7 @@ struct SessionDetailView: View {
                 Text("Session")
                     .font(.ptSerif(.subheadline, weight: .semibold))
             }
-            .listRowBackground(Color.white)
+            .ptGlassRow()
 
             // Exercise list
             if !sortedExercises.isEmpty {
@@ -54,10 +54,9 @@ struct SessionDetailView: View {
                         .padding(.vertical, 2)
                     }
                 } header: {
-                    Text("Exercises (\(sortedExercises.count))")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("Exercises (\(sortedExercises.count))")
                 }
-                .listRowBackground(Color.white)
+                .ptGlassRow()
             }
 
             // Results (after completion)
@@ -67,10 +66,9 @@ struct SessionDetailView: View {
                         SessionLogRow(log: log)
                     }
                 } header: {
-                    Text("Results")
-                        .font(.ptSerif(.subheadline, weight: .semibold))
+                    PTSectionHeader("Results")
                 }
-                .listRowBackground(Color.white)
+                .ptGlassRow()
             }
 
             // Start workout CTA
@@ -79,19 +77,18 @@ struct SessionDetailView: View {
                     Button {
                         showingWorkout = true
                     } label: {
-                        HStack {
-                            Spacer()
-                            Label("Start Workout", systemImage: "play.fill")
-                                .font(.ptSerif(.body, weight: .semibold))
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
+                        Label("Start Workout", systemImage: "play.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.ptSerif(.body, weight: .semibold))
+                            .frame(maxWidth: .infinity)
                     }
-                    .listRowBackground(Color.ptTerracotta)
+                    .ptPrimaryButton()
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 }
             }
         }
+        .listRowSpacing(8)
         .ptBackground()
         .navigationTitle("Session")
         .navigationBarTitleDisplayMode(.inline)
@@ -111,9 +108,9 @@ private struct SessionStatusBanner: View {
     }
 
     private var bannerColor: Color {
-        if session.isCompleted { return .ptSage }
+        if session.isCompleted { return .ptSecondary }
         if isOverdue            { return .orange }
-        return .ptTerracotta
+        return .ptAccent
     }
 
     private var icon: String {
@@ -133,6 +130,7 @@ private struct SessionStatusBanner: View {
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundColor(.white)
+                .symbolEffect(.bounce, options: .nonRepeating, value: session.isCompleted)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(statusText)
@@ -145,8 +143,8 @@ private struct SessionStatusBanner: View {
 
             Spacer()
         }
-        .padding(16)
-        .background(bannerColor)
+        .padding(18)
+        .glassEffect(.regular.tint(bannerColor), in: .rect(cornerRadius: PTRadius.lg))
     }
 }
 

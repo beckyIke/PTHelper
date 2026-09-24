@@ -21,8 +21,9 @@ struct ScheduleView: View {
                 // Hero header card
                 Section {
                     ScheduleHeroCard(todayCount: todaysSessions.count)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                        .ptEntrance()
                 }
 
                 if sessions.isEmpty {
@@ -37,16 +38,16 @@ struct ScheduleView: View {
                 } else {
                     if !upcoming.isEmpty {
                         Section {
-                            ForEach(upcoming) { session in
+                            ForEach(Array(upcoming.enumerated()), id: \.element.id) { index, session in
                                 NavigationLink(destination: SessionDetailView(session: session)) {
                                     SessionRowView(session: session)
                                 }
-                                .listRowBackground(Color.white)
+                                .ptGlassRow()
+                                .ptEntrance(index: min(index, 8) + 1)
                             }
                             .onDelete { offsets in deleteSessions(from: upcoming, offsets: offsets) }
                         } header: {
-                            Text("Upcoming")
-                                .font(.ptSerif(.subheadline, weight: .semibold))
+                            PTSectionHeader("Upcoming")
                         }
                     }
 
@@ -56,15 +57,15 @@ struct ScheduleView: View {
                                 NavigationLink(destination: SessionDetailView(session: session)) {
                                     SessionRowView(session: session)
                                 }
-                                .listRowBackground(Color.white)
+                                .ptGlassRow()
                             }
                         } header: {
-                            Text("Completed")
-                                .font(.ptSerif(.subheadline, weight: .semibold))
+                            PTSectionHeader("Completed")
                         }
                     }
                 }
             }
+            .listRowSpacing(8)
             .ptBackground()
             .navigationTitle("Schedule")
             .toolbar {
@@ -89,28 +90,37 @@ struct ScheduleView: View {
 
 struct ScheduleHeroCard: View {
     let todayCount: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     private var dayString: String {
         Date().formatted(.dateTime.weekday(.wide).month().day())
     }
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            Rectangle()
-                .fill(Color.ptTerracotta)
-
+        HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(dayString)
                     .font(.ptSerif(.subheadline))
-                    .foregroundColor(.white.opacity(0.85))
+                    .foregroundStyle(.white.opacity(0.85))
                 Text(todayCount == 0 ? "Rest day" : todayCount == 1 ? "1 session today" : "\(todayCount) sessions today")
                     .font(.ptSerif(.title, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
             }
-            .padding(20)
+            Spacer()
+            Image(systemName: todayCount == 0 ? "leaf.fill" : "figure.strengthtraining.functional")
+                .font(.system(size: 44, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+                .symbolEffect(.breathe, options: .repeating)
+                .contentTransition(.symbolEffect(.replace))
+                .accessibilityHidden(true)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 130)
+        .padding(22)
+        .frame(maxWidth: .infinity, minHeight: 130, alignment: .bottomLeading)
+        // Glass renders its tint brighter in dark mode; deepen it so the white text keeps its contrast.
+        .glassEffect(.regular.tint(colorScheme == .dark ? Color.ptAccent.mix(with: .black, by: 0.35) : .ptAccent),
+                     in: .rect(cornerRadius: PTRadius.lg))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -139,7 +149,9 @@ struct SessionRowView: View {
             }
             Spacer()
             if session.isCompleted {
-                Image(systemName: "checkmark.circle.fill").foregroundColor(.ptSage)
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.ptSecondary)
+                    .symbolEffect(.bounce, options: .nonRepeating, value: session.isCompleted)
             } else if isOverdue {
                 Image(systemName: "exclamationmark.circle.fill").foregroundColor(.orange)
             } else {

@@ -23,9 +23,9 @@ extension View {
 extension DayStatus {
     var color: Color {
         switch self {
-        case .complete: return .ptSage
-        case .partial:  return .ptSage.opacity(0.45)
-        case .missed:   return .ptTerracotta.opacity(0.45)
+        case .complete: return .ptSecondary
+        case .partial:  return .ptSecondary.opacity(0.45)
+        case .missed:   return .ptAccent.opacity(0.45)
         case .rest:     return Color(.systemGray5)
         case .upcoming: return Color(.systemGray6)
         }
@@ -57,10 +57,10 @@ struct WeekRingView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.ptSage.opacity(0.18), lineWidth: 14)
+                .stroke(Color.ptSecondary.opacity(0.18), lineWidth: 14)
             Circle()
                 .trim(from: 0, to: appeared ? fraction : 0)
-                .stroke(Color.ptSage, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                .stroke(Color.ptSecondary, style: StrokeStyle(lineWidth: 14, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .appearAnimation(appeared)
             VStack(spacing: 0) {
@@ -92,12 +92,13 @@ struct WeeksStreakView: View {
             HStack(spacing: 6) {
                 Image(systemName: "flame.fill")
                     .font(.title)
-                    .foregroundColor(.ptTerracotta)
+                    .foregroundStyle(.orange.gradient)
+                    .symbolEffect(.breathe, options: .repeating, isActive: streak > 0)
                     .scaleEffect(appeared ? 1 : 0.3)
                     .appearAnimation(appeared, delay: 0.2)
                 Text("\(appeared ? streak : 0)")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .foregroundColor(.ptTerracotta)
+                    .foregroundColor(.ptAccent)
                     .contentTransition(.numericText(value: Double(appeared ? streak : 0)))
                     .appearAnimation(appeared, delay: 0.2)
             }
@@ -109,7 +110,7 @@ struct WeeksStreakView: View {
             if usedGrace {
                 Label("Streak saved by a grace day", systemImage: "heart.fill")
                     .font(.caption2)
-                    .foregroundColor(.ptTerracotta)
+                    .foregroundColor(.ptAccent)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,18 +160,18 @@ private struct DayDot: View {
         ZStack {
             switch day.status {
             case .complete:
-                Circle().fill(Color.ptSage)
+                Circle().fill(Color.ptSecondary)
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white)
             case .partial:
-                Circle().stroke(Color.ptSage.opacity(0.25), lineWidth: 4)
+                Circle().stroke(Color.ptSecondary.opacity(0.25), lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: Double(day.completed) / Double(max(day.scheduled, 1)))
-                    .stroke(Color.ptSage, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(Color.ptSecondary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
             case .missed:
-                Circle().stroke(Color.ptTerracotta.opacity(0.55), lineWidth: 2.5)
+                Circle().stroke(Color.ptAccent.opacity(0.55), lineWidth: 2.5)
             case .upcoming:
                 Circle().stroke(Color(.systemGray3), style: StrokeStyle(lineWidth: 2, dash: [3, 3]))
             case .rest:
@@ -195,7 +196,7 @@ struct WeeklyHistoryChart: View {
                 x: .value("Week", week.start, unit: .weekOfYear),
                 y: .value("Completion", appeared ? percent : 0)
             )
-            .foregroundStyle(week.isPerfect ? Color.ptTerracotta : Color.ptSage)
+            .foregroundStyle(week.isPerfect ? Color.ptAccent : Color.ptSecondary)
             .cornerRadius(4)
         }
         .chartYScale(domain: 0...100)
@@ -287,8 +288,7 @@ struct StatCard: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.vertical, 14)
         .padding(.horizontal, 6)
-        .background(background)
-        .cornerRadius(14)
+        .glassEffect(.regular.tint(background.opacity(0.85)).interactive(), in: .rect(cornerRadius: PTRadius.md))
         .accessibilityElement(children: .combine)
     }
 }

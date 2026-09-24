@@ -19,18 +19,20 @@ struct RoutinesView: View {
                     )
                 } else {
                     List {
-                        ForEach(routines) { routine in
+                        ForEach(Array(routines.enumerated()), id: \.element.id) { index, routine in
                             NavigationLink(destination: RoutineDetailView(routine: routine)) {
                                 RoutineRowView(routine: routine)
                             }
-                            .listRowBackground(Color.white)
+                            .ptGlassRow()
+                            .ptEntrance(index: index)
                         }
                         .onDelete(perform: deleteRoutines)
                     }
-                    .ptBackground()
+                    .listRowSpacing(10)
                 }
             }
-            .background(Color.ptBackground.ignoresSafeArea())
+            .ptBackground()
+            .animation(PTMotion.bouncy, value: routines.count)
             .navigationTitle("My Routines")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -70,6 +72,13 @@ struct RoutineRowView: View {
     let routine: Routine
 
     var body: some View {
+        HStack(spacing: 14) {
+            Text("\(routine.exercises.count)")
+                .font(.ptNumber(20))
+                .foregroundStyle(.white)
+                .frame(width: 46, height: 46)
+                .background(Color.ptAccent.gradient, in: .rect(cornerRadius: PTRadius.sm))
+                .accessibilityHidden(true)
         VStack(alignment: .leading, spacing: 6) {
             Text(routine.name)
                 .font(.ptSerif(.headline, weight: .semibold))
@@ -80,9 +89,10 @@ struct RoutineRowView: View {
                     Text("·").font(.caption).foregroundColor(.secondary)
                     Label(routine.recurrence.displayName, systemImage: "repeat")
                         .font(.caption)
-                        .foregroundColor(.ptTerracotta)
+                        .foregroundColor(.ptAccent)
                 }
             }
+        }
         }
         .padding(.vertical, 6)
     }
