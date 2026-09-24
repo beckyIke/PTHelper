@@ -65,7 +65,7 @@ BONES = [
 ]
 LENGTH = {b: norm(v) for b, _, v, _ in BONES}
 PARENT = {b: p for b, p, _, _ in BONES}
-EXPORT = ['root', 'chest', 'neck', 'head', 'nose', 'lShoulder', 'rShoulder', 'lElbow', 'rElbow', 'lHand', 'rHand',
+EXPORT = ['root', 'chest', 'lumbar', 'neck', 'head', 'nose', 'lShoulder', 'rShoulder', 'lElbow', 'rElbow', 'lHand', 'rHand',
           'lHip', 'rHip', 'lKnee', 'rKnee', 'lAnkle', 'rAnkle', 'lBall', 'rBall', 'lToe', 'rToe', 'lHeel', 'rHeel']
 
 
@@ -112,6 +112,9 @@ def forward_kinematics(pose):
             R = mm(R, local_rotation(joint, pose.get(joint, {})))
         acc[bone] = R
         pos[bone] = add(pos[parent], mv(R, rest))
+    # A small lower-back contour makes pelvic tilts legible without exaggerating whole-body motion.
+    pos['lumbar'] = add(lerp(pos['root'], pos['chest'], 0.35),
+                        mv(R0, (0, 0, pose.get('spine', {}).get('arch', 0))))
     return pos, acc
 
 # ---------------------------------------------------------------- pose helpers
@@ -207,7 +210,8 @@ def ease(w):
 
 class Exercise:
     def __init__(self, name, poses, timeline, camera=(90, 0), contacts=(), pins=(), props=(), glows=(),
-                 face=False, trails=(), fps=30, flat_feet=(), focus=(), linear=False, far=None):
+                 face=False, trails=(), fps=30, flat_feet=(), focus=(), linear=False, far=None,
+                 figure_style='fitness', cues=None, joined_feet=()):
         self.name, self.poses, self.timeline = name, poses, timeline
         self.camera, self.contacts, self.pins = camera, contacts, pins
         self.props, self.glows, self.face, self.trails, self.fps = props, glows, face, trails, fps
@@ -215,6 +219,9 @@ class Exercise:
         self.focus = list(focus)     # joints to frame as a close-up
         self.linear = linear         # constant-speed blending (for continuous paths like circles and letters)
         self.far = far               # force which side is drawn as the far side ('l' or 'r')
+        self.figure_style = figure_style
+        self.cues = cues or {}        # pose/transition name → short movement instruction
+        self.joined_feet = joined_feet  # clamshell: keep toe/heel orientation together as the knee opens
         self.ground = 0.0
 
     def _solve(self, pose, base):
@@ -244,6 +251,10 @@ class Exercise:
             ball = add(ankle, add(mul(fwd, 0.13), (0, -0.06, 0)))
             pos[side + 'Ball'], pos[side + 'Toe'] = ball, add(ball, mul(fwd, 0.06))
             pos[side + 'Heel'] = add(ankle, add(mul(fwd, -0.05), (0, -0.06, 0)))
+        for moving, fixed in self.joined_feet:
+            offset = sub(pos[moving + 'Ankle'], pos[fixed + 'Ankle'])
+            for joint in ('Ball', 'Toe', 'Heel'):
+                pos[moving + joint] = add(pos[fixed + joint], offset)
         return pos
 
     def build(self):
@@ -268,10 +279,9 @@ class Exercise:
                     ik = {}
                     for end in set(pa.get('ik', {})) | set(pb.get('ik', {})):
                         ta, tb = pa.get('ik', {}).get(end), pb.get('ik', {}).get(end)
-                        if ta and tb:
-                            ik[end] = ('lerp', ta, tb, w)
-                        else:
-                            ik[end] = ta or tb
+                        # Ease into/out of a grasp instead of snapping to a target that exists
+                        # only in the stretch pose. The missing endpoint follows free FK motion.
+                        ik[end] = ('lerp', ta or ('joint', end), tb or ('joint', end), w)
                     pose['ik'] = ik
                     glow = {g: pa.get('glow', {}).get(g, 0) + (pb.get('glow', {}).get(g, 0) - pa.get('glow', {}).get(g, 0)) * w
                             for g in set(pa.get('glow', {})) | set(pb.get('glow', {}))}
@@ -324,7 +334,7 @@ class Exercise:
         pts = [v for f in frames2d for v in f.values()] + [q for p in props for q in p.pop('_extent')]
         xs, ys = [p[0] for p in pts], [p[1] for p in pts]
         cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
-        n = lambda p: [round((p[0] - cx) / span + 0.5, 3), round((p[1] - cy) / span + 0.5, 3)]
+        n = lambda p: [round((p[0] - cx) / span + 0.5, 4), round((p[1] - cy) / span + 0.5, 4)]
         nl = lambda v: round(v / span, 4)
         for p in props:
             for key in ('points', 'center', 'rect'):
@@ -351,6 +361,15 @@ class Exercise:
         if self.face: data['face'] = True
         if self.focus: data['focus'] = self.focus
         if self.trails: data['trails'] = [dict(t) for t in self.trails]
+        if self.figure_style: data['figureStyle'] = self.figure_style
+        if self.cues:
+            cues, frame = [], 0
+            for step, seconds in self.timeline:
+                label = self.cues.get(step, self.cues.get(step.split('>')[-1]))
+                if label and (not cues or cues[-1]['label'] != label):
+                    cues.append({'startFrame': frame, 'label': label})
+                frame += max(1, int(round(seconds * self.fps)))
+            data['cues'] = cues
         json.dump(data, open(path, 'w'), separators=(',', ':'))
         return data
 

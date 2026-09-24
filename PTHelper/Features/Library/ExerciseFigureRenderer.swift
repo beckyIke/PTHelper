@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Draws one frame of an `ExerciseAnimation`: props, muscle glows, trails, then the thick-limbed figure.
+/// Draws one frame of an `ExerciseAnimation`: props, muscle glows, trails, then the activity figure.
 /// Shared by `ExerciseFigureView` and the Mac preview tool in `tools/stick-figure/`, so previews match the app.
 struct ExerciseFigureRenderer {
     let animation: ExerciseAnimation
@@ -17,7 +17,22 @@ struct ExerciseFigureRenderer {
     /// Room around the scene bounds for limb thickness and the head.
     static let margin = 0.09
 
-    var frame: CGRect { animation.bounds.insetBy(dx: -Self.margin, dy: -Self.margin) }
+    static let fitnessTint = Color(red: 0.68, green: 1, blue: 0)
+    static let fitnessBackground = Color(red: 0.055, green: 0.075, blue: 0.025)
+
+    var frame: CGRect {
+        var bounds = animation.bounds.insetBy(dx: -Self.margin, dy: -Self.margin)
+        if animation.figureStyle == .fitness {
+            let width = max(bounds.width, 0.58)
+            bounds.origin.x -= (width - bounds.width) / 2
+            bounds.size.width = width
+            if !animation.cues.isEmpty {
+                bounds.origin.y -= 0.14
+                bounds.size.height += 0.14
+            }
+        }
+        return bounds
+    }
 
     func draw(atFrame position: Double, in canvas: inout GraphicsContext, size: CGSize) {
         let pose = animation.pose(atFrame: position)
@@ -25,7 +40,13 @@ struct ExerciseFigureRenderer {
         let scale = size.width / frame.width   // points per animation unit
         func map(_ v: CGPoint) -> CGPoint { CGPoint(x: (v.x - frame.minX) * scale, y: (frame.maxY - v.y) * scale) }
         func p(_ key: String) -> CGPoint? { pose[key].map(map) }
-        let limb = Self.limbWidth * scale
+        let fitness = animation.figureStyle == .fitness
+        let limb = (fitness ? 0.039 : Self.limbWidth) * scale
+
+        if fitness {
+            canvas.clip(to: Path(CGRect(origin: .zero, size: size)))
+            canvas.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Self.fitnessBackground))
+        }
 
         func stroke(_ points: [CGPoint], _ color: Color, _ width: CGFloat) {
             guard let first = points.first else { return }
@@ -42,9 +63,9 @@ struct ExerciseFigureRenderer {
         for prop in animation.props {
             let color: Color = switch prop.style ?? .prop {
             case .band: bandColor
-            case .strap: .primary.opacity(0.45)
-            case .towel: .primary.opacity(0.22)
-            case .prop: propColor
+            case .strap: fitness ? .white.opacity(0.65) : .primary.opacity(0.45)
+            case .towel: fitness ? .white.opacity(0.35) : .primary.opacity(0.22)
+            case .prop: fitness ? .white.opacity(0.22) : propColor
             }
             switch prop.type {
             case .line:
@@ -73,12 +94,15 @@ struct ExerciseFigureRenderer {
             let width = max(maxX - minX + limb * 2, 0.28 * scale)
             let shadow = CGRect(x: (minX + maxX) / 2 - width / 2, y: groundY + limb * 0.6 - 0.012 * scale,
                                 width: width, height: 0.024 * scale)
-            canvas.fill(Path(ellipseIn: shadow), with: .color(.primary.opacity(0.08)))
+            canvas.fill(Path(ellipseIn: shadow), with: .color(fitness ? Self.fitnessTint.opacity(0.07) : .primary.opacity(0.08)))
         }
 
         // Trails (fading path of a joint over recent frames)
         for trail in animation.trails {
-            let count = min(trail.frames, animation.frames.count - 1)
+            var count = min(trail.frames, animation.frames.count - 1)
+            if trail.resetOnCue == true, let cue = animation.cues.last(where: { Double($0.startFrame) <= position }) {
+                count = min(count, max(0, Int(position) - cue.startFrame))
+            }
             guard count > 1 else { continue }
             let path = (0...count).map { step -> CGPoint? in
                 let back = position - Double(count - step)
@@ -98,16 +122,21 @@ struct ExerciseFigureRenderer {
             var glowCanvas = canvas
             glowCanvas.addFilter(.blur(radius: limb * 0.5))
             let pts = glow.joints.compactMap(p)
-            let color = glowColor.opacity(0.75 * amount)
+            let color = fitness ? Self.fitnessTint.opacity(0.4 * amount) : glowColor.opacity(0.75 * amount)
             if pts.count == 1, let c = pts.first {
                 let r = limb * 1.6
                 glowCanvas.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(color))
-            } else {
+            } else if let first = pts.first {
                 var path = Path()
-                path.move(to: pts[0])
+                path.move(to: first)
                 pts.dropFirst().forEach { path.addLine(to: $0) }
                 glowCanvas.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: limb * 2.4, lineCap: .round, lineJoin: .round))
             }
+        }
+
+        if fitness {
+            drawFitness(pose, atFrame: position, in: &canvas, size: size, scale: scale, map: map)
+            return
         }
 
         // Figure: far limbs first and lighter, then the torso, then near limbs on top.
@@ -150,6 +179,126 @@ struct ExerciseFigureRenderer {
                 canvas.fill(Path(ellipseIn: CGRect(x: noseCenter.x - r, y: noseCenter.y - r, width: r * 2, height: r * 2)),
                             with: .color(far))
             }
+        }
+    }
+
+    /// A compact activity glyph with a tapered torso, rounded limbs and quiet joint cues.
+    private func drawFitness(_ pose: ExerciseAnimation.Pose, atFrame position: Double,
+                             in canvas: inout GraphicsContext, size: CGSize, scale: CGFloat,
+                             map: (CGPoint) -> CGPoint) {
+        func p(_ key: String) -> CGPoint? { pose[key].map(map) }
+        func path(_ keys: [String]) -> Path {
+            let points = keys.compactMap(p)
+            return Path { path in
+                guard let first = points.first else { return }
+                path.move(to: first)
+                points.dropFirst().forEach { path.addLine(to: $0) }
+            }
+        }
+        func stroke(_ keys: [String], color: Color, width: CGFloat) {
+            canvas.stroke(path(keys), with: .color(color),
+                          style: StrokeStyle(lineWidth: width * scale, lineCap: .round, lineJoin: .round))
+        }
+        func joint(_ key: String, color: Color, radius: CGFloat = 0.0065) {
+            guard let center = p(key) else { return }
+            let r = radius * scale
+            let dot = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2))
+            canvas.fill(dot, with: .color(color.mix(with: Self.fitnessBackground, by: 0.18)))
+        }
+        func leg(_ side: String, color: Color) {
+            stroke(["\(side)Hip", "\(side)Knee", "\(side)Ankle"], color: color, width: 0.043)
+            // A simple rounded foot instead of the anatomical heel/ball outline.
+            stroke(["\(side)Ankle", "\(side)Ball", "\(side)Toe"], color: color, width: 0.032)
+            joint("\(side)Knee", color: color)
+            joint("\(side)Ankle", color: color, radius: 0.005)
+            if animation.focus.contains("\(side)Toe") {
+                // Foot close-ups need the ball joint to make toe curls and ankle motion legible.
+                joint("\(side)Ball", color: color, radius: 0.004)
+            }
+        }
+        func arm(_ side: String, color: Color, foreground: Bool) {
+            let keys = ["\(side)Shoulder", "\(side)Elbow", "\(side)Hand"]
+            if foreground {
+                // A fine gap keeps the moving arm readable when it passes across the torso.
+                stroke(keys, color: Self.fitnessBackground, width: 0.048)
+            }
+            stroke(keys, color: color, width: 0.039)
+            joint("\(side)Shoulder", color: color, radius: 0.008)
+            joint("\(side)Elbow", color: color)
+        }
+
+        let foreground = Self.fitnessTint
+        let background = foreground.mix(with: Self.fitnessBackground, by: 0.13)
+        let f = animation.farSide.rawValue, n = animation.farSide.opposite.rawValue
+        leg(f, color: background)
+        arm(f, color: background, foreground: false)
+        leg(n, color: foreground)
+
+        if let lHip = p("lHip"), let rHip = p("rHip"), let lSh = p("lShoulder"), let rSh = p("rShoulder") {
+            let top = midpoint(lSh, rSh), bottom = midpoint(lHip, rHip)
+            let lumbar = p("lumbar"), chest = p("chest")
+            let lumbarOffset = if let lumbar, let chest {
+                CGPoint(x: lumbar.x - (bottom.x * 0.65 + chest.x * 0.35),
+                        y: lumbar.y - (bottom.y * 0.65 + chest.y * 0.35))
+            } else { CGPoint.zero }
+            let length = max(distance(top, bottom), 1)
+            let axis = CGPoint(x: (bottom.x - top.x) / length, y: (bottom.y - top.y) / length)
+            let normal = CGPoint(x: -axis.y, y: axis.x)
+            func offset(_ point: CGPoint, across: CGFloat, along: CGFloat = 0) -> CGPoint {
+                CGPoint(x: point.x + normal.x * across + axis.x * along,
+                        y: point.y + normal.y * across + axis.y * along)
+            }
+            func lowerCurve(_ point: CGPoint) -> CGPoint {
+                let control = offset(point, across: 0, along: -length * 0.25)
+                return CGPoint(x: control.x + lumbarOffset.x * 2, y: control.y + lumbarOffset.y * 2)
+            }
+            let shoulderWidth = max(distance(lSh, rSh) * 0.5, 0.036 * scale)
+            let hipWidth = max(distance(lHip, rHip) * 0.5, 0.025 * scale)
+            let topA = offset(top, across: shoulderWidth), topB = offset(top, across: -shoulderWidth)
+            let bottomA = offset(bottom, across: hipWidth), bottomB = offset(bottom, across: -hipWidth)
+            let torso = Path { path in
+                path.move(to: topA)
+                path.addQuadCurve(to: topB, control: offset(top, across: 0, along: -shoulderWidth * 0.85))
+                path.addCurve(to: bottomB, control1: offset(topB, across: 0, along: length * 0.45),
+                              control2: lowerCurve(bottomB))
+                path.addQuadCurve(to: bottomA, control: offset(bottom, across: 0, along: 0.027 * scale))
+                path.addCurve(to: topA, control1: lowerCurve(bottomA),
+                              control2: offset(topA, across: 0, along: length * 0.45))
+                path.closeSubpath()
+            }
+            canvas.fill(torso, with: .color(foreground))
+            joint("\(n)Hip", color: foreground, radius: 0.006)
+        }
+        arm(n, color: foreground, foreground: true)
+
+        if let head = p("head"), let neck = p("neck") {
+            let radius = 0.047 * scale
+            let d = max(distance(neck, head), 1)
+            let center = CGPoint(x: head.x - (head.x - neck.x) / d * 0.008 * scale,
+                                 y: head.y - (head.y - neck.y) / d * 0.008 * scale)
+            canvas.fill(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius,
+                                              width: radius * 2, height: radius * 2)), with: .color(foreground))
+            if animation.showsFace, let nose = p("nose") {
+                // A quiet face-direction dot distinguishes turning from tilting the head.
+                let offset = CGPoint(x: nose.x - head.x, y: nose.y - head.y)
+                let dotRadius = radius * 0.22
+                let dotCenter = CGPoint(x: center.x + offset.x * 0.72, y: center.y + offset.y * 0.72)
+                canvas.fill(Path(ellipseIn: CGRect(x: dotCenter.x - dotRadius, y: dotCenter.y - dotRadius,
+                                                  width: dotRadius * 2, height: dotRadius * 2)),
+                            with: .color(foreground.mix(with: Self.fitnessBackground, by: 0.45)))
+            }
+        }
+
+        if let cue = animation.cue(atFrame: position) {
+            // Crop the figure above this band, including legs outside an upper-body close-up.
+            canvas.fill(Path(CGRect(x: 0, y: size.height - 0.14 * scale,
+                                    width: size.width, height: 0.14 * scale)), with: .color(Self.fitnessBackground))
+            let text = Text(cue).font(.system(size: min(15, max(9, 0.031 * scale)), weight: .medium))
+                .foregroundColor(.white.opacity(0.8))
+            // Constrain captions so narrow portrait and close-up stages don't clip longer cues.
+            let rect = CGRect(x: 8, y: size.height - 0.13 * scale,
+                              width: max(0, size.width - 16), height: 0.12 * scale)
+            canvas.draw(text, in: rect)
         }
     }
 

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Looping, thick-limbed stick figure demonstrating an exercise, drawn live from joint data.
-/// Crops to the scene's own bounds, follows the app palette in light and dark mode,
-/// and shows a single still pose when Reduce Motion is on.
+/// Looping activity figure demonstrating an exercise, drawn live from joint data.
+/// Crops to the scene's own bounds and shows a single still pose when Reduce Motion is on.
+/// Classic figures use the app palette; fitness figures use a dedicated high-contrast stage.
 struct ExerciseFigureView: View {
     let animation: ExerciseAnimation
     var isPlaying = true
@@ -21,9 +21,10 @@ struct ExerciseFigureView: View {
             }
         }
         .aspectRatio(renderer.frame.width / max(renderer.frame.height, 0.01), contentMode: .fit)
-        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: animation.figureStyle == .fitness ? 20 : 0))
         .accessibilityElement()
         .accessibilityLabel("Animation showing how to do \(animation.name)")
+        .accessibilityValue(animation.cues.map(\.label).joined(separator: ". "))
         .accessibilityAddTraits(.isImage)
     }
 }

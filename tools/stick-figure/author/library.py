@@ -1,5 +1,5 @@
 """Key poses and timing for every exercise in the PTHelper library, written from each exercise's description
-(see PTHelper/Services/SeedData.swift). Bird Dog is traced from video instead (see ../solve_bird_dog.py).
+(see PTHelper/Services/SeedData.swift).
 
 Conventions (see rig.py): side views face screen-left; the figure's left side is nearest the camera when standing,
 its right side when lying on its back. Long holds (e.g. "hold 30 seconds") are shortened to a few seconds so the
@@ -7,8 +7,9 @@ loop stays watchable; the glow pulses during holds to show the muscle is working
 """
 import math
 from rig import Exercise, both, merge
+from alphabet import LETTERS
 
-SIDE = (90, 0)
+SIDE = (78, 6)  # Slight three-quarter view keeps both limbs distinguishable.
 T_R, L_R, F_R = 0.145, 0.075, 0.06          # torso, limb and foot radii (m)
 FEET = [('lHeel', F_R), ('rHeel', F_R), ('lBall', F_R), ('rBall', F_R)]
 LEG_HINT = both(Hip={'flex': 12}, Knee={'flex': 24})     # gives IK legs a forward knee bend
@@ -32,7 +33,7 @@ def box(a, b, style='prop'):
 def line(points, width=0.02, style='band'):
     return {'type': 'line', 'points': list(points), 'width': width, 'style': style}
 
-def chair(front=0.16, back=-0.30, half=0.24, seat=0.39, top=0.98):
+def chair(front=0.16, back=-0.30, half=0.24, seat=0.50, top=0.98):
     """Line-drawn chair under a seated figure whose root is at z = 0 — reads from any camera angle."""
     w = 0.03
     corners = [(half, seat, front), (-half, seat, front), (-half, seat, back), (half, seat, back), (half, seat, front)]
@@ -68,13 +69,14 @@ def quad_sets():
     rest = merge(SUPINE, {'rHip': {'flex': 5}, 'rKnee': {'flex': 10}}, both(Shoulder={'abd': 10}))
     press = merge(SUPINE, both(Shoulder={'abd': 10}), {'glow': {'quad': 1.0}})
     return Exercise('Quad Sets', {'rest': rest, 'press': press},
-                    seq(('rest', 0.8), ('press', 3.0, 0.5), ('rest', 0.5, 0.7)),
+                    seq(('rest', 0.8), ('press', 5.0, 0.5), ('rest', 0.5, 0.7)),
                     camera=SIDE, contacts=LYING + [('lHeel', F_R)],
                     glows=[{'name': 'quad', 'joints': ['rHip', 'rKnee']}])
 
 def straight_leg_raises():
     base = merge(SUPINE, {'lHip': {'flex': 45}, 'lKnee': {'flex': 90}}, both(Shoulder={'abd': 10}), planted('l'))
-    up = merge(base, {'rHip': {'flex': 45}, 'glow': {'quad': 1.0}})
+    # The ankle should reach the bent knee's height, not rise far above it.
+    up = merge(base, {'rHip': {'flex': 22}, 'glow': {'quad': 1.0}})
     return Exercise('Straight Leg Raises', {'down': base, 'up': up},
                     seq(('down', 0.6), ('up', 0.5, 1.3), ('down', 0.4, 1.8)),
                     camera=SIDE, contacts=LYING + [('rHeel', F_R), ('lHeel', F_R)], flat_feet='l',
@@ -90,14 +92,14 @@ def short_arc_quads():
                     glows=[{'name': 'quad', 'joints': ['rHip', 'rKnee']}])
 
 def terminal_knee_extension():
-    bent = merge(ARMS_DOWN, {'lHip': {'flex': 15}, 'lKnee': {'flex': 28}, 'rHip': {'flex': 10}, 'rKnee': {'flex': 20}},
-                 planted('r'))
-    straight = merge(bent, {'lHip': {'flex': 0}, 'lKnee': {'flex': 0}, 'glow': {'quad': 1.0}})
-    anchor = line([(0.1, 0.5, 0.85), 'lKnee'], width=0.022)
+    feet = {'lAnkle': ('world', (0.1, 0.12, 0.02)), 'rAnkle': ('world', (-0.1, 0.12, 0.02))}
+    bent = merge(ARMS_DOWN, LEG_HINT, {'root': {'y': 0.96, 'z': 0.02}, 'ik': feet})
+    straight = merge(bent, {'root': {'y': 0.9898}, 'lHip': {'flex': 0}, 'lKnee': {'flex': 0}, 'glow': {'quad': 1.0}})
+    anchor = line([(0.1, 0.72, 0.85), 'lKnee'], width=0.022)
     post = box((0.0, 0.0, 0.85), (0.2, 0.9, 0.92))
     return Exercise('Terminal Knee Extension', {'bent': bent, 'straight': straight},
                     seq(('bent', 0.5), ('straight', 0.7, 1.0), ('bent', 0.3, 1.2)),
-                    camera=SIDE, contacts=FEET, pins=['lBall'], flat_feet='lr', props=[post, anchor],
+                    camera=SIDE, flat_feet='lr', props=[post, anchor],
                     glows=[{'name': 'quad', 'joints': ['lHip', 'lKnee']}])
 
 def wall_sit():
@@ -136,19 +138,20 @@ def step_ups():
 # ------------------------------------------------------------------ hip
 
 def clamshells():
-    base = merge(SIDE_LYING, both(Hip={'flex': 45}, Knee={'flex': 90}),
+    base = merge(SIDE_LYING, both(Hip={'flex': 45}, Knee={'flex': 45}),
                  {'rShoulder': {'flex': 170}, 'rElbow': {'flex': 20}, 'lShoulder': {'flex': 10}, 'neck': {'lat': -15}})
-    base['ik'] = {'lAnkle': ('joint', 'rAnkle', (0, 0.17, 0))}
+    base['ik'] = {'lAnkle': ('joint', 'rAnkle', (0, 0.065, 0))}
     opened = merge(base, {'lHip': {'flex': 45, 'abd': 38}, 'glow': {'glute': 1.0}})
     opened['ik'] = dict(base['ik'])
     return Exercise('Clamshells', {'closed': base, 'open': opened},
                     seq(('closed', 0.6), ('open', 0.6, 1.2), ('closed', 0.3, 1.4)),
                     camera=(0, 20), contacts=[('rHip', L_R), ('rShoulder', L_R), ('rKnee', L_R)], far='r',
+                    joined_feet=[('l', 'r')],
                     glows=[{'name': 'glute', 'joints': ['lHip']}])
 
 def glute_bridges():
     down = merge(SUPINE, KNEES_BENT, both(Shoulder={'abd': 10}))
-    up = merge(down, {'root': {'yaw': 180, 'pitch': -127}, 'neck': {'flex': 30}, 'glow': {'glutes': 1.0}})
+    up = merge(down, {'root': {'yaw': 180, 'pitch': -114.7}, 'neck': {'flex': 25}, 'glow': {'glutes': 1.0}})
     ik = {'lAnkle': ('base', 'lAnkle'), 'rAnkle': ('base', 'rAnkle'), 'lHand': ('base', 'lHand'), 'rHand': ('base', 'rHand')}
     down['ik'], up['ik'] = dict(ik), dict(ik)
     return Exercise('Glute Bridges', {'down': down, 'up': up},
@@ -174,10 +177,12 @@ def donkey_kicks():
                     glows=[{'name': 'glute', 'joints': ['lHip']}])
 
 def hip_flexor_stretch():
-    kneel = merge({'lHip': {'flex': 0}, 'lKnee': {'flex': 90}, 'rHip': {'flex': 90}, 'rKnee': {'flex': 90}}, ARMS_DOWN)
+    kneel = merge({'lHip': {'flex': 0}, 'lKnee': {'flex': 90}, 'lAnkle': {'dorsi': -65},
+                   'rHip': {'flex': 90}, 'rKnee': {'flex': 90}}, ARMS_DOWN)
     ik = {'lAnkle': ('base', 'lAnkle'), 'rAnkle': ('base', 'rAnkle')}
     kneel['ik'] = dict(ik)
-    push = merge(kneel, {'root': {'z': 0.13, 'y': -0.03}, 'lHip': {'flex': -18}, 'glow': {'flexor': 1.0}})
+    push = merge(kneel, {'root': {'z': 0.13, 'y': -0.03}, 'lHip': {'flex': -18},
+                         'lAnkle': {'dorsi': -47}, 'glow': {'flexor': 1.0}})
     push['ik'] = dict(ik)
     return Exercise('Hip Flexor Stretch', {'kneel': kneel, 'push': push},
                     seq(('kneel', 0.6), ('push', 2.5, 1.4), ('kneel', 0.4, 1.4)),
@@ -215,7 +220,8 @@ def hip_circles():
     poses, steps = {}, []
     for i in range(9):
         a = 2 * math.pi * (i % 8) / 8
-        poses[f'c{i}'] = merge(LEG_HINT, {'root': {'x': 0.09 * math.cos(a), 'z': 0.09 * math.sin(a), 'y': 0.955},
+        poses[f'c{i}'] = merge(LEG_HINT, both(Shoulder={'abd': 45, 'flex': -12}, Elbow={'flex': 90}),
+                               {'root': {'x': 0.09 * math.cos(a), 'z': 0.09 * math.sin(a), 'y': 0.955},
                                           'spine': {'lat': -9 * math.cos(a), 'flex': -7 * math.sin(a)}},
                                {'ik': {**hands, **feet}})
     poses['c8'] = poses['c0']
@@ -223,7 +229,9 @@ def hip_circles():
     loop = steps + [(f'c{i}', 0, 0.36) for i in range(1, 9)]
     reverse = [(f'c{i}', 0, 0.36) for i in range(7, -1, -1)] * 2
     return Exercise('Hip Circles', poses, seq(*(loop + reverse)),
-                    camera=(30, 25), flat_feet='lr', linear=True)
+                    camera=(30, 25), flat_feet='lr', linear=True,
+                    cues={**{f'c{i}': 'Circle hips · feet stay still' for i in range(9)},
+                          **{f'c{i}>c{i - 1}': 'Reverse the hip circle' for i in range(1, 9)}})
 
 # ------------------------------------------------------------------ shoulder
 
@@ -257,10 +265,10 @@ def shoulder_rows():
 
 def scapular_retraction():
     rest = merge(ARMS_DOWN)
-    squeeze = merge(both(Shoulder={'abd': 6, 'flex': -8}, Scap={'retract': 22}), {'spine': {'flex': -4}, 'glow': {'back': 1.0}})
+    squeeze = merge(ARMS_DOWN, both(Scap={'retract': 22}), {'glow': {'back': 1.0}})
     return Exercise('Scapular Retraction', {'rest': rest, 'squeeze': squeeze},
-                    seq(('rest', 0.6), ('squeeze', 2.5, 0.8), ('rest', 0.3, 0.8)),
-                    camera=(60, 0), contacts=FEET, flat_feet='lr',
+                    seq(('rest', 0.6), ('squeeze', 5.0, 0.8), ('rest', 0.3, 0.8)),
+                    camera=(145, 8), contacts=FEET, flat_feet='lr', focus=UPPER_BODY,
                     glows=[{'name': 'back', 'joints': ['chest']}])
 
 def shoulder_cross_body_stretch():
@@ -299,11 +307,15 @@ def shoulder_circles():
     poses = {}
     for i in range(8):
         a = math.pi / 2 - 2 * math.pi * i / 8      # forward roll: up → forward → down → back
-        poses[f'p{i}'] = merge(both(Shoulder={'abd': 6}, Scap={'retract': -20 * math.cos(a), 'elev': 18 * math.sin(a)}))
+        poses[f'p{i}'] = merge(both(Shoulder={'abd': 6}, Scap={'retract': -20 * math.cos(a), 'elev': 18 * math.sin(a)}),
+                               {'ik': {'lHand': ('joint', 'lShoulder', (0.05, -0.575, 0)),
+                                       'rHand': ('joint', 'rShoulder', (-0.05, -0.575, 0))}})
     forward = [(f'p{i % 8}', 0, 0.22) for i in range(1, 17)]
     backward = [(f'p{i % 8}', 0, 0.22) for i in range(15, -1, -1)]
     return Exercise('Shoulder Circles', poses, seq(('p0', 0.2), *forward, *backward),
-                    camera=(60, 5), contacts=FEET, flat_feet='lr', linear=True, focus=UPPER_BODY)
+                    camera=(60, 5), contacts=FEET, flat_feet='lr', linear=True, focus=UPPER_BODY,
+                    cues={**{f'p{i}': 'Roll both shoulders forward' for i in range(8)},
+                          **{f'p{i}>p{(i - 1) % 8}': 'Roll both shoulders backward' for i in range(8)}})
 
 # ------------------------------------------------------------------ ankle / foot
 
@@ -325,13 +337,14 @@ def ankle_eversion_with_band():
     return Exercise('Ankle Eversion with Band', {'sit': sit, 'evert': evert},
                     seq(('sit', 0.5), ('evert', 0.4, 0.9), ('sit', 0.3, 1.1)),
                     camera=EVERT_CAMERA, contacts=[('root', T_R), ('lHeel', F_R), ('rHeel', F_R)], props=[band],
+                    focus=['lKnee', 'lAnkle', 'lBall', 'lToe', 'lHeel', 'rKnee', 'rAnkle', 'rBall'],
                     glows=[{'name': 'peroneal', 'joints': ['lKnee', 'lAnkle']}])
 
 def towel_scrunches():
     sit = merge(SEATED, HANDS_ON_THIGHS)
-    curl = merge(sit, {'lToe': {'flex': 55}, 'glow': {'foot': 1.0}})
+    curl = merge(sit, {'lAnkle': {'dorsi': 6}, 'lToe': {'flex': 55}, 'glow': {'foot': 1.0}})
     curl['ik'] = dict(HANDS_ON_THIGHS['ik'])
-    towel = line([('base', 'lHeel', (0, -0.075, -0.06)), ('base', 'lToe', (0, -0.075, 0.3))], width=0.03, style='towel')
+    towel = line([('base', 'lHeel', (0, -0.035, -0.06)), 'lToe'], width=0.03, style='towel')
     bunch = {'type': 'circle', 'center': 'lToe', 'radius': 0.04, 'style': 'towel'}
     return Exercise('Towel Scrunches', {'flat': sit, 'curl': curl},
                     seq(('flat', 0.4), ('curl', 0.4, 0.6), ('flat', 0.3, 0.6), ('curl', 0.4, 0.6), ('flat', 0.3, 0.6)),
@@ -341,25 +354,19 @@ def towel_scrunches():
 
 def ankle_alphabet():
     base = merge(SEATED, {'lHip': {'flex': 90}, 'lKnee': {'flex': 0}}, HANDS_ON_THIGHS)
-    # Letters as strokes in a [-1, 1] box; the toe traces them via ankle angles.
-    A = [(-1, -1), (0, 1), (1, -1), (0.5, 0), (-0.5, 0)]
-    B = [(-1, -1), (-1, 1), (0.4, 1), (0.8, 0.6), (0.4, 0.1), (-1, 0.1), (0.5, 0.1), (0.9, -0.45), (0.5, -1), (-1, -1)]
-    C = [(0.8 * math.cos(math.radians(a)), 0.9 * math.sin(math.radians(a))) for a in range(40, 330, 32)]
-    path = A + B + C + [(-1, -1)]
-    poses, steps = {}, []
-    for i, (u, v) in enumerate(path):
-        p = merge(base, {'lAnkle': {'evert': u * 24, 'dorsi': v * 22}})
-        p['ik'] = dict(HANDS_ON_THIGHS['ik'])
-        poses[f'p{i}'] = p
-        if i:
-            du, dv = u - path[i - 1][0], v - path[i - 1][1]
-            steps.append((f'p{i}', 0, max(0.25, math.hypot(du, dv) * 0.42)))
-        else:
-            steps.append(('p0', 0.3))
-    poses[f'p{len(path) - 1}'] = poses['p0']
+    poses, steps, cues = {}, [], {}
+    for letter, points in LETTERS.items():
+        for i, (u, v) in enumerate(points):
+            key = f'{letter}{i}'
+            # Only the ankle changes. The suspended thigh/shin and the other foot stay still.
+            poses[key] = merge(base, {'lAnkle': {'evert': u * 24, 'dorsi': v * 22}})
+            cues[key] = f'Trace {letter} with your toe'
+            move = 0.55 if i == 0 else max(0.15, math.dist(points[i - 1], (u, v)) * 0.4)
+            steps.append((key, 0.35 if i == 0 else 0, move))
+    steps.append(('A0', 0, 0.65))
     return Exercise('Ankle Alphabet', poses, seq(*steps), camera=(40, 12), props=chair(), flat_feet='r',
-                    linear=True, trails=[{'joint': 'lToe', 'frames': 45}],
-                    focus=['root', 'lHip', 'lKnee', 'lAnkle', 'lBall', 'lToe', 'lHeel'])
+                    linear=True, trails=[{'joint': 'lToe', 'frames': 150, 'resetOnCue': True}], cues=cues,
+                    focus=['lKnee', 'lAnkle', 'lBall', 'lToe', 'lHeel'])
 
 # ------------------------------------------------------------------ core
 
@@ -369,12 +376,22 @@ def dead_bug():
     b = merge(start, {'lShoulder': {'flex': 172}, 'rHip': {'flex': 22}, 'rKnee': {'flex': 0}, 'glow': {'core': 0.7}})
     return Exercise('Dead Bug', {'start': start, 'a': a, 'b': b},
                     seq(('start', 0.5), ('a', 0.4, 1.3), ('start', 0.4, 1.2), ('b', 0.4, 1.3), ('start', 0.1, 1.2)),
-                    camera=SIDE, contacts=LYING,
+                    camera=(78, 12), contacts=LYING,
                     glows=[{'name': 'core', 'joints': ['root', 'chest']}])
 
+def bird_dog():
+    rest = merge(PRONE, both(Hip={'flex': 90}, Knee={'flex': 90}, Shoulder={'flex': 90}))
+    a = merge(rest, {'rShoulder': {'flex': 180}, 'lHip': {'flex': 0}, 'lKnee': {'flex': 0}})
+    b = merge(rest, {'lShoulder': {'flex': 180}, 'rHip': {'flex': 0}, 'rKnee': {'flex': 0}})
+    return Exercise('Bird Dog', {'rest': rest, 'a': a, 'b': b},
+                    seq(('rest', 0.8), ('a', 2.0, 1.5), ('rest', 0.6, 1.2),
+                        ('b', 2.0, 1.5), ('rest', 0.4, 1.2)),
+                    camera=(78, 8), far='r',
+                    contacts=[('lHand', L_R), ('rHand', L_R), ('lKnee', L_R), ('rKnee', L_R)])
+
 def pelvic_tilts():
-    rest = merge(SUPINE, KNEES_BENT, both(Shoulder={'abd': 10}), planted('l', 'r'))
-    tilt = merge(rest, {'root': {'yaw': 180, 'pitch': -104}, 'spine': {'flex': 14}, 'glow': {'abs': 1.0}})
+    rest = merge(SUPINE, KNEES_BENT, both(Shoulder={'abd': 15}), planted('l', 'r'), {'spine': {'arch': 0.045}})
+    tilt = merge(rest, {'root': {'yaw': 180, 'pitch': -104}, 'spine': {'flex': 14, 'arch': 0}, 'glow': {'abs': 1.0}})
     tilt['ik'] = dict(rest['ik'])
     return Exercise('Pelvic Tilts', {'rest': rest, 'tilt': tilt},
                     seq(('rest', 0.6), ('tilt', 1.0, 0.8), ('rest', 0.4, 0.8)),
@@ -382,12 +399,14 @@ def pelvic_tilts():
                     glows=[{'name': 'abs', 'joints': ['root', 'chest']}])
 
 def plank():
-    knees = merge({'root': {'pitch': 67}}, both(Shoulder={'flex': 67}, Elbow={'flex': 90}, Knee={'flex': 23}, Ankle={'dorsi': -60}))
-    full = merge({'root': {'pitch': 78}}, both(Shoulder={'flex': 78}, Elbow={'flex': 90}, Ankle={'dorsi': 10}),
+    knees = merge({'root': {'pitch': 71.1}}, both(Shoulder={'flex': 71.1}, Elbow={'flex': 90}, Knee={'flex': 18.9},
+                                               Ankle={'dorsi': -60}, Toe={'flex': -150}))
+    full = merge({'root': {'pitch': 83}}, both(Shoulder={'flex': 83}, Elbow={'flex': 90},
+                                               Ankle={'dorsi': 0}, Toe={'flex': -83}),
                  {'glow': {'core': 1.0}})
     return Exercise('Plank', {'knees': knees, 'full': full},
                     seq(('knees', 0.6), ('full', 3.0, 1.0), ('knees', 0.4, 1.0)),
-                    camera=SIDE, contacts=[('lElbow', L_R), ('rElbow', L_R), ('lKnee', L_R), ('rKnee', L_R)],
+                    camera=SIDE, contacts=[('lElbow', 0.047), ('rElbow', 0.047), ('lKnee', 0.052), ('rKnee', 0.052)],
                     pins=['lElbow', 'rElbow'],
                     glows=[{'name': 'core', 'joints': ['root', 'chest']}])
 
@@ -426,8 +445,11 @@ def quad_stretch():
 def calf_stretch():
     feet = {'lAnkle': ('world', (0.1, 0.12, -0.36)), 'rAnkle': ('world', (-0.1, 0.12, 0.34))}
     hands = {'lHand': ('world', (0.2, 1.3, 0.84)), 'rHand': ('world', (-0.2, 1.3, 0.84))}
-    upright = merge({'root': {'z': 0.0, 'y': 0.92, 'pitch': 8}}, LEG_HINT, {'ik': {**feet, **hands}})
-    lean = merge({'root': {'z': 0.2, 'y': 0.88, 'pitch': 24}}, LEG_HINT, {'ik': {**feet, **hands}}, {'glow': {'calf': 1.0}})
+    # Keep the rear hip-to-ankle distance within a straight leg's reach, so the heel stays down.
+    upright = merge({'root': {'z': 0.0, 'y': 0.12 + math.sqrt(0.8698**2 - 0.36**2), 'pitch': 8}},
+                    LEG_HINT, {'ik': {**feet, **hands}})
+    lean = merge({'root': {'z': 0.2, 'y': 0.12 + math.sqrt(0.8698**2 - 0.56**2), 'pitch': 18}},
+                 LEG_HINT, {'ik': {**feet, **hands}}, {'glow': {'calf': 1.0}})
     return Exercise('Calf Stretch (Gastrocnemius)', {'upright': upright, 'lean': lean},
                     seq(('upright', 0.6), ('lean', 2.5, 1.4), ('upright', 0.4, 1.4)),
                     camera=SIDE, props=[wall(0.86, 0.94)], flat_feet='lr',
@@ -504,16 +526,26 @@ def tandem_stance():
                     camera=(40, 15), flat_feet='lr')
 
 def single_leg_balance_with_arm_reach():
-    lifted = merge({'rShoulder': {'abd': 10}, 'lShoulder': {'abd': 6}, 'lHip': {'flex': 20}, 'lKnee': {'flex': 60}})
-    stand = merge(ARMS_DOWN)
-    fwd = merge(lifted, {'lShoulder': {'flex': 95}, 'spine': {'flex': 12}})
-    side = merge(lifted, {'lShoulder': {'abd': 90}, 'spine': {'lat': -6}})
-    diag = merge(lifted, {'lShoulder': {'flex': 85, 'hadd': -45}, 'spine': {'flex': 8}})
+    # The description specifies the arm opposite the standing leg: right arm, left support.
+    arms = {'lShoulder': {'abd': 16, 'flex': -8}, 'lElbow': {'flex': 12},
+            'rShoulder': {'abd': 12, 'flex': 8}, 'rElbow': {'flex': 24}}
+    stand = merge(arms)
+    lifted = merge(arms, {'rHip': {'flex': 30, 'abd': 12}, 'rKnee': {'flex': 80}})
+    fwd = merge(lifted, {'rShoulder': {'flex': 88, 'abd': 4}, 'rElbow': {'flex': 8}, 'spine': {'flex': 4}})
+    side = merge(lifted, {'rShoulder': {'flex': 0, 'abd': 88}, 'rElbow': {'flex': 8}, 'spine': {'lat': 3}})
+    # Keep the diagonal path below and beside the face, rather than obscuring the head.
+    diag = merge(lifted, {'rShoulder': {'flex': 110, 'abd': 4, 'hadd': 25}, 'rElbow': {'flex': 8}})
     return Exercise('Single Leg Balance with Arm Reach',
                     {'stand': stand, 'lifted': lifted, 'fwd': fwd, 'side': side, 'diag': diag},
-                    seq(('stand', 0.3), ('lifted', 0.2, 0.7), ('fwd', 0.4, 1.0), ('lifted', 0.1, 0.9), ('side', 0.4, 1.0),
-                        ('lifted', 0.1, 0.9), ('diag', 0.4, 1.0), ('lifted', 0.2, 0.9), ('stand', 0.2, 0.7)),
-                    camera=(35, 12), contacts=FEET, pins=['rBall'], flat_feet='r')
+                    seq(('stand', 0.5), ('lifted', 0.55, 0.85), ('fwd', 0.8, 1.1), ('lifted', 0.4, 0.95),
+                        ('side', 0.8, 1.1), ('lifted', 0.4, 0.95), ('diag', 0.8, 1.1),
+                        ('lifted', 0.55, 0.95), ('stand', 0.4, 0.85)),
+                    camera=(-50, 5), contacts=FEET, pins=['lBall'], flat_feet='l', far='l',
+                    figure_style='fitness',
+                    cues={'stand': 'Stand tall', 'stand>lifted': 'Lift your right foot', 'lifted': 'Balance on your left leg',
+                          'fwd': 'Reach forward', 'side': 'Reach to the side', 'diag': 'Reach diagonally up',
+                          'fwd>lifted': 'Return slowly', 'side>lifted': 'Return slowly', 'diag>lifted': 'Return slowly',
+                          'lifted>stand': 'Lower your foot'})
 
 # ------------------------------------------------------------------ range of motion
 
@@ -542,7 +574,7 @@ ALL = [quad_sets, straight_leg_raises, short_arc_quads, terminal_knee_extension,
        clamshells, glute_bridges, side_lying_hip_abduction, donkey_kicks,
        external_rotation_with_band, internal_rotation_with_band, shoulder_rows, scapular_retraction,
        heel_raises, ankle_eversion_with_band, towel_scrunches,
-       dead_bug, pelvic_tilts, plank, supine_marching,
+       dead_bug, bird_dog, pelvic_tilts, plank, supine_marching,
        hamstring_stretch, quad_stretch, hip_flexor_stretch, piriformis_stretch, calf_stretch, it_band_stretch,
        thoracic_rotation, shoulder_cross_body_stretch, neck_stretch,
        single_leg_stance, tandem_stance, single_leg_balance_with_arm_reach,

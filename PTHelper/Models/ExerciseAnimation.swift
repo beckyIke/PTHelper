@@ -9,6 +9,15 @@ import Foundation
 struct ExerciseAnimation: Decodable {
     typealias Pose = [String: CGPoint]
 
+    enum FigureStyle: String, Decodable {
+        case classic, fitness
+    }
+
+    struct Cue: Decodable {
+        let startFrame: Int
+        let label: String
+    }
+
     enum Side: String, Decodable {
         case left = "l", right = "r"
         var opposite: Side { self == .left ? .right : .left }
@@ -61,11 +70,12 @@ struct ExerciseAnimation: Decodable {
     struct Trail: Decodable {
         let joint: String
         let frames: Int
+        let resetOnCue: Bool?
     }
 
     let name: String
     let fps: Double
-    /// Limbs on this side are farther from the camera and drawn lighter, behind the body.
+    /// Limbs on this side are behind the body, drawn in the style's secondary shade.
     let farSide: Side
     let frames: [Pose]
     let props: [Prop]
@@ -75,6 +85,10 @@ struct ExerciseAnimation: Decodable {
     let showsFace: Bool
     /// When set, the view frames just these joints (a close-up), e.g. the foot for ankle exercises.
     let focus: [String]
+    let figureStyle: FigureStyle
+    let cues: [Cue]
+    /// Cached once when loading: the full A–Z animation has thousands of frames.
+    let bounds: CGRect
 
     var duration: TimeInterval { Double(frames.count) / fps }
 
@@ -82,7 +96,9 @@ struct ExerciseAnimation: Decodable {
     static let joints = ["root", "neck", "head", "lShoulder", "rShoulder", "lElbow", "rElbow", "lHand", "rHand",
                          "lHip", "rHip", "lKnee", "rKnee", "lAnkle", "rAnkle"]
 
-    private enum CodingKeys: String, CodingKey { case name, fps, farSide, frames, props, glows, trails, face, focus }
+    private enum CodingKeys: String, CodingKey {
+        case name, fps, farSide, frames, props, glows, trails, face, focus, figureStyle, cues
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -96,9 +112,16 @@ struct ExerciseAnimation: Decodable {
         trails = try container.decodeIfPresent([Trail].self, forKey: .trails) ?? []
         showsFace = try container.decodeIfPresent(Bool.self, forKey: .face) ?? false
         focus = try container.decodeIfPresent([String].self, forKey: .focus) ?? []
+        figureStyle = try container.decodeIfPresent(FigureStyle.self, forKey: .figureStyle) ?? .classic
+        cues = try container.decodeIfPresent([Cue].self, forKey: .cues) ?? []
+        bounds = Self.sceneBounds(frames: frames, focus: focus, props: props)
     }
 
     // MARK: Playback
+
+    func cue(atFrame position: Double) -> String? {
+        cues.last { Double($0.startFrame) <= position }?.label
+    }
 
     /// Fractional frame position for a time, looping.
     func framePosition(at time: TimeInterval) -> Double {
@@ -147,7 +170,7 @@ struct ExerciseAnimation: Decodable {
     var stillPose: Pose { frames.isEmpty ? [:] : frames[stillFrame] }
 
     /// Bounding box of every joint and prop across all frames (or just the focus joints), so the view can crop.
-    var bounds: CGRect {
+    private static func sceneBounds(frames: [Pose], focus: [String], props: [Prop]) -> CGRect {
         if !focus.isEmpty {
             let points = frames.flatMap { frame in focus.compactMap { frame[$0] } }
             let xs = points.map(\.x), ys = points.map(\.y)

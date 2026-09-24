@@ -11,3 +11,5 @@ stills/
 *.png
 raw.json
 preview
+# Keep the preview executable ignored, but track the reusable preview source directory.
+!preview/

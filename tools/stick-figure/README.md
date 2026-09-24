@@ -1,8 +1,8 @@
 # Stick-figure exercise animations
 
-Turns a video of someone doing an exercise into the looping stick-figure animations shown by
-`ExerciseFigureView` in the app. Everything runs locally on a Mac with Apple's frameworks
-(AVFoundation for video, Vision for body-pose detection) — no extra dependencies.
+Builds the looping activity figures shown by `ExerciseFigureView`. All 41 built-in exercises are authored
+from their descriptions in `PTHelper/Services/SeedData.swift`, using the shared fitness renderer: lime figures
+on a dark stage, subtly marked joints, rounded limbs, and movement captions. Everything runs locally.
 
 The app looks for `PTHelper/Resources/ExerciseAnimations/<exercise-name>.json`, where the file name is the
 exercise's library name lowercased with dashes ("Bird Dog" → `bird-dog.json`). Adding a file there is all it
@@ -10,31 +10,41 @@ takes for the animation to appear on that exercise's detail screen and in workou
 
 ## Two ways to make an animation
 
-1. **Authored from the description (`author/`) — used for 40 of the 41 library exercises.** Key poses are
+1. **Authored from the description (`author/`) — used for all 41 library exercises.** Key poses are
    written in plain PT terms (hip flex 45°, knee flex 90°, …) on a small 3D skeleton with realistic proportions,
    then blended with easing, kept planted with pins and IK, and projected through a camera. Props (wall, chair,
    step, band, strap, towel), muscle glows, close-up framing and toe trails are supported. This is the reliable
    route for lying-down exercises and small movements that video tracking can't see.
-2. **Traced from video (the pipeline below) — used for Bird Dog.** Vision detects joints in a real video;
-   a solver turns them into a clean loop.
+2. **Traced from video (the optional legacy pipeline below).** Vision detects joints in a real video;
+   a solver turns them into a clean loop. Bird Dog now uses the authored rig too, with opposite limbs and
+   two-second holds on each side.
 
 ### Authoring workflow
 
 ```sh
-cd tools/stick-figure/author
-python3 build.py                      # writes every exercise in library.py into the app bundle
-python3 build.py /tmp/out "wall sit"  # or just one, somewhere else
+# From the repository root:
+python3 -B tools/stick-figure/author/build.py
+python3 -B tools/stick-figure/author/build.py /tmp/pthelper-poses "wall sit"
+python3 -B -m unittest discover -s tools/stick-figure/author -p 'test_*.py'
 
 # Preview contact sheets using the app's own renderer:
-APP=../../../PTHelper
-swiftc -O -o preview $APP/Models/ExerciseAnimation.swift $APP/Features/Library/ExerciseFigureRenderer.swift \
-    ../preview/Shim.swift ../preview/main.swift
-./preview $APP/Resources/ExerciseAnimations/wall-sit.json wall-sit.png 6 12   # columns, frames
+swiftc -O -o /tmp/pthelper-preview PTHelper/Models/ExerciseAnimation.swift \
+    PTHelper/Features/Library/ExerciseFigureRenderer.swift \
+    tools/stick-figure/preview/Shim.swift tools/stick-figure/preview/main.swift
+/tmp/pthelper-preview PTHelper/Resources/ExerciseAnimations /tmp/pthelper-review --gifs
+python3 -B tools/stick-figure/preview/gallery.py /tmp/pthelper-review
 ```
 
 To add an exercise: write a function in `author/library.py` (copy the closest existing one), add it to `ALL`,
 build, and check the preview against the exercise's written description. Name must match the library exactly.
 `rig.py` documents the angle conventions (e.g. shoulder `flex` = arm forward/up, knee `flex` = heel to buttock).
+`cues.py` supplies phase instructions; exercises with dynamic sequences supply their own cues. The full
+description audit is in [DESCRIPTION_AUDIT.md](DESCRIPTION_AUDIT.md).
+
+Explicit 2–5 second holds are demonstrated at their stated duration. Long timed exercises show a shorter
+representative hold; the animation is not the workout timer. Ankle Alphabet traces all 26 letters at a readable
+pace (~95 seconds), with a fresh trail for each letter. Bounds are cached at decode time so the long sequence
+does not require rescanning every frame during playback.
 
 ## Video pipeline
 
@@ -82,8 +92,16 @@ a small solver that turns detections into a clean, seamlessly looping skeleton. 
 ```
 
 Coordinates are 0…1 with y pointing up. `farSide` (`"l"` or `"r"`) is the side farther from the camera; those
-limbs are drawn lighter and behind the body. Joints: `root neck head lShoulder rShoulder lElbow rElbow lHand
+limbs are drawn behind the body in a secondary shade. Joints: `root neck head lShoulder rShoulder lElbow rElbow lHand
 rHand lHip rHip lKnee rKnee lAnkle rAnkle`.
+
+`figureStyle` is optional and defaults to `classic`. The `fitness` style uses a lime activity figure on a
+dark stage, with slimmer rounded limbs, a tapered torso, and subtle joint markers. All bundled animations
+opt in. Optional `cues` entries (`startFrame`, `label`) display short instructions
+in a reserved caption area beneath that figure. In `author/library.py`, set `figure_style='fitness'` and
+provide a `cues` dictionary keyed by pose or transition name; the exporter derives frame timings.
+Authored frames also include `lumbar` for the small lower-back contour change in Pelvic Tilts. Optional
+trail `resetOnCue` prevents one alphabet letter's trail from carrying into the next.
 
 ## Tips
 

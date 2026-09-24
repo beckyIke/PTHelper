@@ -80,7 +80,9 @@ struct ExerciseAnimationTests {
         for name in try libraryExerciseNames() {
             let animation = try #require(ExerciseAnimation.named(name))
             #expect(animation.name == name)
-            #expect(animation.duration > 2 && animation.duration < 20, "\(name) is \(animation.duration)s")
+            // A–Z deliberately takes longer; do not rush 26 letters into a short demonstration loop.
+            let maximumDuration: Double = name == "Ankle Alphabet" ? 120 : 20
+            #expect(animation.duration > 2 && animation.duration < maximumDuration, "\(name) is \(animation.duration)s")
             for frame in animation.frames {
                 #expect(Set(frame.keys).isSuperset(of: ExerciseAnimation.joints), "\(name) is missing joints")
             }
@@ -95,6 +97,48 @@ struct ExerciseAnimationTests {
             for glow in animation.glows {
                 #expect(glow.intensity.count == animation.frames.count)
             }
+        }
+    }
+
+    @Test func libraryUsesFitnessStyleAndValidCues() throws {
+        for name in try libraryExerciseNames() {
+            let animation = try #require(ExerciseAnimation.named(name))
+            #expect(animation.figureStyle == .fitness, "\(name) uses the old figure")
+            #expect(animation.cues.first?.startFrame == 0)
+            var previous = -1
+            for cue in animation.cues {
+                #expect(cue.startFrame > previous && cue.startFrame < animation.frames.count)
+                #expect(!cue.label.isEmpty)
+                #expect(animation.cue(atFrame: Double(cue.startFrame)) == cue.label)
+                previous = cue.startFrame
+            }
+            #expect(animation.bounds.width > 0 && animation.bounds.height > 0)
+            for frame in animation.frames {
+                #expect(frame.values.allSatisfy { $0.x.isFinite && $0.y.isFinite })
+            }
+        }
+    }
+
+    @Test func ankleAlphabetDemonstratesEveryLetterWithAStationaryLeg() throws {
+        let animation = try #require(ExerciseAnimation.named("Ankle Alphabet"))
+        let labels = Set(animation.cues.map(\.label))
+        for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+            #expect(labels.contains("Trace \(letter) with your toe"))
+        }
+        #expect(animation.trails.first?.resetOnCue == true)
+        let first = animation.frames[0]
+        for frame in animation.frames {
+            for joint in ["lHip", "lKnee", "lAnkle", "rAnkle"] {
+                #expect(frame[joint] == first[joint], "Alphabet moved \(joint) instead of only the ankle")
+            }
+        }
+    }
+
+    @Test func headRotationKeepsFaceDirectionCues() throws {
+        for name in ["Cervical Range of Motion", "Thoracic Rotation"] {
+            let animation = try #require(ExerciseAnimation.named(name))
+            #expect(animation.showsFace)
+            #expect(animation.frames.allSatisfy { $0["nose"] != nil })
         }
     }
 }
